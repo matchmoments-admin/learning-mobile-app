@@ -1,10 +1,14 @@
-import { Question, SpeakingOption } from "@/constants/CourseData";
+import { Question, SpeakingOption } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
-import { incrementLessonCompletion } from "@/lib/lessonProgress";
+import { useAccessibility } from "@/ctx/AccessibilityContext";
+import { useLanguage } from "@/ctx/LanguageContext";
+import { useAuth } from "@/ctx/AuthContext";
+import { incrementLessonCompletion } from "@/lib/services/progress-service";
+import { logLearningEvent, EVENTS } from "@/lib/services/event-service";
 import {
   recordQuestionAnswered,
   recordQuestionListened,
-} from "@/lib/speakingListeningStats";
+} from "@/lib/services/stats-service";
 import { supabase } from "@/utils/supabase";
 import { Audio, InterruptionModeIOS } from "expo-av";
 import * as FileSystem from "expo-file-system/legacy";
@@ -26,11 +30,9 @@ import SentenceBreakdownCard from "./SentenceBreakdownCard";
 import SingleResponseMode from "./SingleResponseMode";
 
 interface WrongQuestion {
-  english: string;
-  mandarin: {
-    hanzi: string;
-    pinyin: string;
-  };
+  translation: string;
+  nativeScript: string;
+  romanization?: string;
   attempts: number;
 }
 
@@ -50,9 +52,12 @@ export default function LessonContent({
   questions: Question[];
   lessonId: string;
 }) {
+  const { activeLanguage } = useLanguage();
+  const { user } = useAuth();
+  const { preferences } = useAccessibility();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [exitConfirmVisible, setExitConfirmVisible] = useState(false);
-  const [showMandarin, setShowMandarin] = useState(false);
+  const [showNativeScript, setShowNativeScript] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -80,7 +85,7 @@ export default function LessonContent({
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
   const [wrongQuestions, setWrongQuestions] = useState<Set<number>>(new Set());
 
-  const fadeAnim = useRef(new Animated.Value(0)).current; // Opacity pinyin/hanzi
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const optionsAnimValue = useRef(new Animated.Value(0)).current;
   const audioSectionAnimHeight = useRef(new Animated.Value(400)).current;
@@ -95,15 +100,17 @@ export default function LessonContent({
   const selectedSentence = useMemo((): SpeakingOption | null => {
     if (currentQuestion.type === "listening_mc") {
       if (showResult) {
-        const correctEnglish =
+        const correctTranslation =
           currentQuestion.options.find(
             (opt) => opt.id === currentQuestion.correctOptionId,
-          )?.english || "";
+          )?.translation || "";
         return {
           id: currentQuestion.id,
-          english: correctEnglish,
-          mandarin: {
-            ...currentQuestion.mandarin,
+          translation: correctTranslation,
+          phrase: {
+            ...currentQuestion.prompt,
+            words: currentQuestion.prompt.words,
+            breakdown: currentQuestion.prompt.breakdown,
           },
         };
       }
@@ -199,7 +206,7 @@ export default function LessonContent({
     if (hasListenedToAudio) return;
     setHasListenedToAudio(true);
     setIsSpeechPlaying(false);
-    void recordQuestionListened();
+    void recordQuestionListened(user?.id);
     Animated.parallel([
       Animated.timing(audioSectionAnimHeight, {
         toValue: 200,
@@ -217,7 +224,7 @@ export default function LessonContent({
 
   const playAudio = () => {
     const textToSpeak =
-      currentQuestion.mandarin.hanzi || currentQuestion.mandarin.pinyin;
+      currentQuestion.prompt.nativeScript || currentQuestion.prompt.romanization || "";
 
     if (isSpeechPlaying) {
       Speech.stop();
@@ -227,7 +234,8 @@ export default function LessonContent({
 
     setIsSpeechPlaying(true);
     Speech.speak(textToSpeak, {
-      language: "zh-CN",
+      language: activeLanguage.ttsCode,
+      rate: preferences.audioSpeed,
       onDone: () => {
         setIsSpeechPlaying(false);
         finishListening();
@@ -298,7 +306,7 @@ export default function LessonContent({
 
     const punctuationRegex = /[.,\/#!$%\^&\*;:{}=\-_`~()?]/g;
 
-    const rawExpected = selectedSentence?.mandarin.pinyin || "";
+    const rawExpected = selectedSentence?.phrase.romanization || "";
     const expected = rawExpected
       .toLowerCase()
       .replace(punctuationRegex, "")
@@ -321,7 +329,13 @@ export default function LessonContent({
 
       setIsCorrect(isSimilarEnough);
       if (isSimilarEnough) {
-        void recordQuestionAnswered();
+        void recordQuestionAnswered(user?.id);
+        if (user?.id) {
+          void logLearningEvent(user.id, EVENTS.QUESTION_ANSWERED, {
+            correct: true,
+            questionType: currentQuestion.type,
+          });
+        }
       }
     }
 
@@ -374,6 +388,7 @@ export default function LessonContent({
               data: base64Audio,
               format: "wav",
             },
+            languageCode: activeLanguage.code,
           },
         },
       );
@@ -396,15 +411,15 @@ export default function LessonContent({
     }
   };
 
-  const handleRevealMandarin = () => {
-    if (showMandarin) {
+  const handleRevealNativeScript = () => {
+    if (showNativeScript) {
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 250,
         useNativeDriver: true,
-      }).start(() => setShowMandarin(false));
+      }).start(() => setShowNativeScript(false));
     } else {
-      setShowMandarin(true);
+      setShowNativeScript(true);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 250,
@@ -460,29 +475,27 @@ export default function LessonContent({
         const wrongQuestionsList = questions
           .filter((q) => wrongQuestions.has(q.id))
           .map((q) => {
-            let english = "";
-            let hanzi = "";
-            let pinyin = "";
+            let translation = "";
+            let nativeScript = "";
+            let romanization: string | undefined;
 
             if (q.type === "listening_mc") {
-              english =
+              translation =
                 q.options.find((opt) => opt.id === q.correctOptionId)
-                  ?.english || "";
-              hanzi = q.mandarin.hanzi;
-              pinyin = q.mandarin.pinyin;
+                  ?.translation || "";
+              nativeScript = q.prompt.nativeScript;
+              romanization = q.prompt.romanization;
             } else {
               const option = q.options[0];
-              english = option.english;
-              hanzi = option.mandarin.hanzi;
-              pinyin = option.mandarin.pinyin;
+              translation = option.translation;
+              nativeScript = option.phrase.nativeScript;
+              romanization = option.phrase.romanization;
             }
 
             return {
-              english,
-              mandarin: {
-                hanzi,
-                pinyin,
-              },
+              translation,
+              nativeScript,
+              romanization,
               attempts: questionAttempts[q.id] || 1,
             };
           });
@@ -535,7 +548,7 @@ export default function LessonContent({
   };
 
   const resetState = () => {
-    setShowMandarin(false);
+    setShowNativeScript(false);
     setSelectedOption(null);
     setShowResult(false);
     setHasListenedToAudio(false);
@@ -559,7 +572,14 @@ export default function LessonContent({
       <LessonCompleteScreen
         lessonStats={lessonStats}
         onContinue={async () => {
-          await incrementLessonCompletion(lessonId);
+          await incrementLessonCompletion(lessonId, user?.id);
+          if (user?.id) {
+            void logLearningEvent(user.id, EVENTS.LESSON_COMPLETED, {
+              lessonId,
+              accuracy: lessonStats.accuracy,
+              totalQuestions: lessonStats.totalQuestions,
+            });
+          }
           router.push("/lessons");
         }}
         onReview={() => {
@@ -623,9 +643,9 @@ export default function LessonContent({
             onPlay={playAudio}
             onStartRecord={startRecording}
             onStopRecord={stopRecording}
-            onRevealMandarin={handleRevealMandarin}
+            onRevealNativeScript={handleRevealNativeScript}
             currentQuestion={currentQuestion}
-            showMandarin={showMandarin}
+            showNativeScript={showNativeScript}
             selectedOption={selectedOption}
             scaleAnim={scaleAnim}
             instructionOpacity={instructionOpacity}
@@ -738,14 +758,14 @@ export default function LessonContent({
         hasListenedToAudio && (
           <SentenceBreakdownCard
             sentence={{
-              english:
+              translation:
                 currentQuestion.options.find(
                   (opt) => opt.id === currentQuestion.correctOptionId,
-                )?.english || "",
-              pinyin: currentQuestion.mandarin.pinyin,
-              hanzi: currentQuestion.mandarin.hanzi,
-              words: currentQuestion.mandarin.words,
-              breakdown: currentQuestion.mandarin.breakdown,
+                )?.translation || "",
+              romanization: currentQuestion.prompt.romanization,
+              nativeScript: currentQuestion.prompt.nativeScript,
+              words: currentQuestion.prompt.words,
+              breakdown: currentQuestion.prompt.breakdown,
             }}
             disabled={showResult}
           />
@@ -755,11 +775,11 @@ export default function LessonContent({
         selectedSentence && (
           <SentenceBreakdownCard
             sentence={{
-              english: selectedSentence.english,
-              pinyin: selectedSentence.mandarin.pinyin,
-              hanzi: selectedSentence.mandarin.hanzi,
-              words: selectedSentence.mandarin.words,
-              breakdown: selectedSentence.mandarin.breakdown,
+              translation: selectedSentence.translation,
+              romanization: selectedSentence.phrase.romanization,
+              nativeScript: selectedSentence.phrase.nativeScript,
+              words: selectedSentence.phrase.words,
+              breakdown: selectedSentence.phrase.breakdown,
             }}
             disabled={showResult}
           />

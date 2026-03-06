@@ -1,5 +1,6 @@
-import { SpeakingOption } from "@/constants/CourseData";
+import { SpeakingOption } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
+import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   Animated,
@@ -26,6 +27,8 @@ export default function MultipleChoiceMode({
   isLoading: boolean;
   showResult: boolean;
 }) {
+  const { activeLanguage } = useLanguage();
+
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.promptContainer}>
@@ -66,7 +69,7 @@ export default function MultipleChoiceMode({
           ]}
         >
           <ThemedText type="subtitle" style={styles.sayItPrompt}>
-            Now, say it in Mandarin
+            Now, say it in {activeLanguage.displayName}
           </ThemedText>
         </Animated.View>
       </View>
@@ -115,10 +118,13 @@ export default function MultipleChoiceMode({
                 ]}
                 onPress={() => handleOptionPress(option.id)}
                 disabled={isLoading || showResult}
+                accessibilityRole="button"
+                accessibilityLabel={`Answer option: ${option.translation}`}
+                accessibilityState={{ selected: isSelected, disabled: isLoading || showResult }}
               >
                 <View style={styles.optionContent}>
                   <ThemedText style={styles.optionText}>
-                    {option.english}
+                    {option.translation}
                   </ThemedText>
                   {isSelected && (
                     <View style={styles.selectedIndicator}>

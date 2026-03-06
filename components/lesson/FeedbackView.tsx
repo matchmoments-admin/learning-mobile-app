@@ -1,5 +1,6 @@
-import { SpeakingOption } from "@/constants/CourseData";
+import { SpeakingOption } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
+import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { ThemedText } from "../themed-text";
@@ -24,6 +25,7 @@ export function FeedbackView({
     said: string;
   };
 }) {
+  const { hasRomanization } = useLanguage();
   const showRetryButton = onRetry && !isCorrect && attemptCount < maxAttempts;
   const showCorrectAnswer = !isCorrect && attemptCount >= maxAttempts;
 
@@ -107,20 +109,22 @@ export function FeedbackView({
             </ThemedText>
           </View>
           <View style={styles.correctAnswerContent}>
-            <ThemedText style={styles.correctAnswerEnglish}>
-              {correctOption.english}
+            <ThemedText style={styles.correctAnswerTranslation}>
+              {correctOption.translation}
             </ThemedText>
-            <View style={styles.correctAnswerMandarin}>
-              <ThemedText style={styles.correctAnswerPinyin}>
-                {correctOption.mandarin.pinyin}
-              </ThemedText>
+            <View style={styles.correctAnswerPhrase}>
+              {hasRomanization() && correctOption.phrase.romanization && (
+                <ThemedText style={styles.correctAnswerRomanization}>
+                  {correctOption.phrase.romanization}
+                </ThemedText>
+              )}
               <ThemedText
                 style={[
-                  styles.correctAnswerHanzi,
+                  styles.correctAnswerNativeScript,
                   { color: Colors.subduedTextColor },
                 ]}
               >
-                {correctOption.mandarin.hanzi}
+                {correctOption.phrase.nativeScript}
               </ThemedText>
             </View>
           </View>
@@ -246,19 +250,19 @@ const styles = StyleSheet.create({
   correctAnswerContent: {
     gap: 8,
   },
-  correctAnswerEnglish: {
+  correctAnswerTranslation: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
   },
-  correctAnswerMandarin: {
+  correctAnswerPhrase: {
     gap: 4,
   },
-  correctAnswerPinyin: {
+  correctAnswerRomanization: {
     fontSize: 18,
     fontWeight: "700",
   },
-  correctAnswerHanzi: {
+  correctAnswerNativeScript: {
     fontSize: 16,
   },
   buttonContainer: {

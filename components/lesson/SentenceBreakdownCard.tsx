@@ -1,5 +1,7 @@
-import { Word } from "@/constants/CourseData";
+import { Term } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
+import { useAccessibility } from "@/ctx/AccessibilityContext";
+import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as Speech from "expo-speech";
 import { useEffect, useRef, useState } from "react";
@@ -39,27 +41,32 @@ export default function SentenceBreakdownCard({
   disabled,
 }: {
   sentence: {
-    english: string;
-    pinyin: string;
-    hanzi: string;
-    words: Word[];
+    translation: string;
+    romanization?: string;
+    nativeScript: string;
+    words: Term[];
     breakdown: string;
   };
   disabled?: boolean;
 }) {
+  const { activeLanguage, hasRomanization: hasRoman, getNativeScriptLabel, getRomanizationLabel } = useLanguage();
+  const { preferences } = useAccessibility();
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(CLOSED_POSITION);
   const context = useSharedValue({ y: 0 });
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const cardRef = useRef<Animated.View>(null);
   const tooltipWidthRef = useRef<number>(0);
-  const hanziWordRefs = useRef<Array<View | null>>([]);
-  const pinyinWordRefs = useRef<Array<View | null>>([]);
+  const nativeScriptWordRefs = useRef<Array<View | null>>([]);
+  const romanizationWordRefs = useRef<Array<View | null>>([]);
   const [selectedWord, setSelectedWord] = useState<{
-    type: "hanzi" | "pinyin";
+    type: "nativeScript" | "romanization";
     index: number;
   } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const romanizationLabel = getRomanizationLabel() ?? "Romanization";
+  const nativeScriptLabel = getNativeScriptLabel();
 
   useEffect(() => {
     return () => {
@@ -119,30 +126,31 @@ export default function SentenceBreakdownCard({
       return;
     }
 
-    const text = sentence.hanzi || sentence.pinyin;
+    const text = sentence.nativeScript || sentence.romanization || "";
     if (!text) return;
 
     setIsPlaying(true);
     Speech.speak(text, {
-      language: "zh-CN",
+      language: activeLanguage.ttsCode,
+      rate: preferences.audioSpeed,
       onDone: () => setIsPlaying(false),
       onStopped: () => setIsPlaying(false),
       onError: () => setIsPlaying(false),
     });
   };
 
-  const showTooltip = (word: Word, type: "hanzi" | "pinyin", index: number) => {
+  const showTooltip = (word: Term, type: "nativeScript" | "romanization", index: number) => {
     const wordRef =
-      type === "hanzi"
-        ? hanziWordRefs.current[index]
-        : pinyinWordRefs.current[index];
+      type === "nativeScript"
+        ? nativeScriptWordRefs.current[index]
+        : romanizationWordRefs.current[index];
     if (!wordRef) return;
 
     wordRef.measureInWindow((wordX, wordY, wordWidth) => {
       cardRef.current?.measureInWindow((cardX, cardY) => {
         setTooltip({
           visible: true,
-          text: word.english,
+          text: word.translation,
           x: wordX + wordWidth / 2,
           y: wordY - cardY,
           width: wordWidth,
@@ -152,28 +160,28 @@ export default function SentenceBreakdownCard({
     });
   };
 
-  const renderInteractiveSentence = (type: "hanzi" | "pinyin") => (
+  const renderInteractiveSentence = (type: "nativeScript" | "romanization") => (
     <Pressable onPress={hideTooltip}>
       <View style={styles.interactiveSentenceContainer}>
         {sentence.words.map((word, index) => (
           <Pressable
             key={index}
             ref={(ref) => {
-              if (type === "hanzi") hanziWordRefs.current[index] = ref;
-              else pinyinWordRefs.current[index] = ref;
+              if (type === "nativeScript") nativeScriptWordRefs.current[index] = ref;
+              else romanizationWordRefs.current[index] = ref;
             }}
             onPress={() => showTooltip(word, type, index)}
           >
             <ThemedText
               style={[
-                type === "hanzi" ? styles.hanziValue : styles.pinyinValue,
+                type === "nativeScript" ? styles.nativeScriptValue : styles.romanizationValue,
                 selectedWord &&
                   selectedWord.type === type &&
                   selectedWord.index === index &&
                   styles.selectedWord,
               ]}
             >
-              {word[type]}{" "}
+              {type === "nativeScript" ? word.nativeScript : word.romanization}{" "}
             </ThemedText>
           </Pressable>
         ))}
@@ -228,32 +236,50 @@ export default function SentenceBreakdownCard({
             </ThemedText>
           </View>
 
+          {hasRoman() && sentence.romanization && (
+            <View style={styles.breakdownItem}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <ThemedText style={styles.label}>{romanizationLabel}:</ThemedText>
+                <Pressable
+                  onPress={playAudio}
+                  disabled={disabled}
+                  style={styles.playButton}
+                  hitSlop={8}
+                >
+                  <Ionicons
+                    name={isPlaying ? "pause" : "play"}
+                    size={20}
+                    color={Colors.primaryAccentColor}
+                  />
+                </Pressable>
+              </View>
+              {renderInteractiveSentence("romanization")}
+            </View>
+          )}
           <View style={styles.breakdownItem}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <ThemedText style={styles.label}>Pinyin:</ThemedText>
-              <Pressable
-                onPress={playAudio}
-                disabled={disabled}
-                style={styles.playButton}
-                hitSlop={8}
-              >
-                <Ionicons
-                  name={isPlaying ? "pause" : "play"}
-                  size={20}
-                  color={Colors.primaryAccentColor}
-                />
-              </Pressable>
+              <ThemedText style={styles.label}>{nativeScriptLabel}:</ThemedText>
+              {!hasRoman() && (
+                <Pressable
+                  onPress={playAudio}
+                  disabled={disabled}
+                  style={styles.playButton}
+                  hitSlop={8}
+                >
+                  <Ionicons
+                    name={isPlaying ? "pause" : "play"}
+                    size={20}
+                    color={Colors.primaryAccentColor}
+                  />
+                </Pressable>
+              )}
             </View>
-            {renderInteractiveSentence("pinyin")}
+            {renderInteractiveSentence("nativeScript")}
           </View>
           <View style={styles.breakdownItem}>
-            <ThemedText style={styles.label}>Hanzi:</ThemedText>
-            {renderInteractiveSentence("hanzi")}
-          </View>
-          <View style={styles.breakdownItem}>
-            <ThemedText style={styles.label}>English:</ThemedText>
-            <ThemedText style={styles.englishValue}>
-              {sentence.english}
+            <ThemedText style={styles.label}>Translation:</ThemedText>
+            <ThemedText style={styles.translationValue}>
+              {sentence.translation}
             </ThemedText>
           </View>
           <View style={styles.breakdownItem}>
@@ -312,8 +338,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
-    elevation: 8, // lowered so it sits behind the result
-    zIndex: 0, // ensure this is lower than the result overlay
+    elevation: 8,
+    zIndex: 0,
   },
   handleContainer: {
     alignItems: "center",
@@ -334,7 +360,7 @@ const styles = StyleSheet.create({
   peekText: {
     marginLeft: 8,
     fontSize: 16,
-    color: Colors.subduedTextColor, // Gray-500
+    color: Colors.subduedTextColor,
     fontWeight: "500",
   },
   fullContent: {
@@ -344,7 +370,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#1c1c1e", // Dark text
+    color: "#1c1c1e",
     marginBottom: 5,
   },
   breakdownItem: {
@@ -352,7 +378,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: Colors.subduedTextColor, // Gray-500
+    color: Colors.subduedTextColor,
     textTransform: "uppercase",
   },
   interactiveSentenceContainer: {
@@ -360,18 +386,18 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     alignItems: "center",
   },
-  pinyinValue: {
+  romanizationValue: {
     fontSize: 18,
     color: "#1c1c1e",
     fontWeight: "600",
     lineHeight: 30,
   },
-  hanziValue: {
+  nativeScriptValue: {
     fontSize: 22,
     color: "#1c1c1e",
     lineHeight: 34,
   },
-  englishValue: {
+  translationValue: {
     fontSize: 18,
     color: "#1c1c1e",
     lineHeight: 26,
@@ -383,7 +409,7 @@ const styles = StyleSheet.create({
   },
   tooltipContainer: {
     position: "absolute",
-    backgroundColor: "#f3f4f6", // Light gray
+    backgroundColor: "#f3f4f6",
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,

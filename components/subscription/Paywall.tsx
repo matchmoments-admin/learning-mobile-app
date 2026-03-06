@@ -38,28 +38,28 @@ interface Plan {
 const features: Feature[] = [
   {
     icon: "book-outline",
-    title: "Advanced Curriculum",
-    description: "Access the world's most advanced speaking curriculum",
-  },
-  {
-    icon: "trending-up-outline",
-    title: "Target Your Mistakes",
-    description: "Lessons personalized to fix your frequent mistakes",
-  },
-  {
-    icon: "bulb-outline",
-    title: "Custom Vocabulary",
-    description: "Learn vocabulary tailored to your interests",
+    title: "All 12 Chapters",
+    description: "Unlock the full curriculum — greetings to advanced topics",
   },
   {
     icon: "people-outline",
-    title: "Situational Roleplays",
-    description: "Practice real-world conversations",
+    title: "AI Conversations",
+    description: "Practice real-world scenarios with an AI conversation partner",
+  },
+  {
+    icon: "create-outline",
+    title: "Custom Scenarios",
+    description: "Create your own conversation topics with Free Talk",
   },
   {
     icon: "mic-outline",
     title: "Pronunciation Coach",
-    description: "Get instant feedback on your pronunciation",
+    description: "Get instant AI feedback on your pronunciation",
+  },
+  {
+    icon: "trending-up-outline",
+    title: "Personalized Lessons",
+    description: "Lessons adapted to fix your frequent mistakes",
   },
   {
     icon: "analytics-outline",
@@ -72,7 +72,7 @@ const plans: { annual: Plan; monthly: Plan } = {
   annual: {
     id: "premium_annual",
     name: "Premium",
-    price: "799.00",
+    price: "$59.99",
     period: "year",
     billingCycle: "Billed yearly",
     features: ["7-day free trial", "Cancel anytime"],
@@ -82,7 +82,7 @@ const plans: { annual: Plan; monthly: Plan } = {
   monthly: {
     id: "premium_monthly",
     name: "Premium",
-    price: "199.00",
+    price: "$9.99",
     period: "month",
     billingCycle: "Billed monthly",
     features: ["7-day free trial", "Cancel anytime"],
@@ -157,9 +157,12 @@ export function Paywall({
           {/* Header */}
           <View style={styles.introSection}>
             <Text style={styles.title}>
-              Join over <Text style={styles.highlight}>5 million</Text> users
+              Unlock the{" "}
+              <Text style={styles.highlight}>full curriculum</Text>
             </Text>
-            <Text style={styles.subtitle}>leaning with Convo!</Text>
+            <Text style={styles.subtitle}>
+              and learn with AI conversations
+            </Text>
           </View>
 
           {/* Features */}
@@ -241,7 +244,7 @@ export function Paywall({
                 </Text>
               </View>
               <View style={styles.planPriceContainer}>
-                <Text style={styles.planPrice}>{selectedPlan.price} kr.</Text>
+                <Text style={styles.planPrice}>{selectedPlan.price}</Text>
                 <Text style={styles.planPeriod}>{selectedPlan.period}</Text>
               </View>
             </View>
@@ -294,7 +297,7 @@ export function Paywall({
           {/* Testimonial */}
           <View style={styles.testimonial}>
             <Text style={styles.testimonialText}>
-              Convo has the best curriculum among all the language
+              Lumora has the best curriculum among all the language
               learning-related apps I've tried. Higher recommended.
             </Text>
             <Text style={styles.testimonialAuthor}>

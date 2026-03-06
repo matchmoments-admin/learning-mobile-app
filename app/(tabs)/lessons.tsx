@@ -1,8 +1,12 @@
+import { Paywall } from "@/components/subscription/Paywall";
 import { ThemedText } from "@/components/themed-text";
-import { Chapter, COURSE_DATA, Lesson } from "@/constants/CourseData";
+import { Chapter, Lesson } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
+import { useAuth } from "@/ctx/AuthContext";
+import { useLanguage } from "@/ctx/LanguageContext";
 import { useSpeakingListningStats } from "@/hooks/useSpeakingListeningStats";
-import { getAllProgress } from "@/lib/lessonProgress";
+import { canAccessChapter } from "@/lib/services/access-service";
+import { getAllProgress } from "@/lib/services/progress-service";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -15,28 +19,45 @@ const MAX_STARS = 3;
 export default function LessonsContent() {
   const colors = Colors["light"];
   const { stats, loading, refresh } = useSpeakingListningStats();
+  const { activePack } = useLanguage();
+  const { user, isPremium } = useAuth();
   const [progress, setProgress] = useState<Record<string, number>>({});
+  const [paywallVisible, setPaywallVisible] = useState(false);
+
+  const chapters = activePack?.chapters ?? [];
 
   useEffect(() => {
     void loadProgress();
   }, []);
 
   const loadProgress = async () => {
-    const savedProgress = await getAllProgress();
+    const savedProgress = await getAllProgress(user?.id);
     setProgress(savedProgress);
   };
 
   useFocusEffect(
     useCallback(() => {
       refresh();
+      void loadProgress();
     }, [refresh]),
   );
 
-  const handleLessonPress = (lesson: Lesson) => {
+  const handleLessonPress = (lesson: Lesson, chapterIndex: number) => {
+    if (activePack && !canAccessChapter(activePack, chapterIndex, isPremium)) {
+      setPaywallVisible(true);
+      return;
+    }
     router.push({ pathname: "/practise", params: { lessonId: lesson.id } });
   };
 
-  const handlePractiseChapterPress = (chapter: Chapter) => {
+  const handlePractiseChapterPress = (
+    chapter: Chapter,
+    chapterIndex: number,
+  ) => {
+    if (activePack && !canAccessChapter(activePack, chapterIndex, isPremium)) {
+      setPaywallVisible(true);
+      return;
+    }
     if (chapter.review) {
       router.push({
         pathname: "/practise",
@@ -76,7 +97,12 @@ export default function LessonsContent() {
     return <View style={styles.completionStarsContainer}>{elements}</View>;
   };
 
-  const renderLessonNode = (lesson: Lesson, index: number) => {
+  const renderLessonNode = (
+    lesson: Lesson,
+    index: number,
+    chapterIndex: number,
+    locked: boolean,
+  ) => {
     const completionCount = progress[lesson.id] || 0;
     const isMastered = completionCount >= MAX_STARS;
     const alignment = index % 2 === 0 ? "flex-start" : "flex-end";
@@ -91,21 +117,24 @@ export default function LessonsContent() {
             styles.lessonBubble,
             {
               backgroundColor: colors.background,
-              borderColor: isMastered
-                ? Colors.primaryAccentColor
-                : Colors.borderColor,
+              borderColor: locked
+                ? Colors.borderColor
+                : isMastered
+                  ? Colors.primaryAccentColor
+                  : Colors.borderColor,
+              opacity: locked ? 0.6 : 1,
             },
           ]}
-          onPress={() => handleLessonPress(lesson)}
+          onPress={() => handleLessonPress(lesson, chapterIndex)}
         >
           <Ionicons
-            name={lesson.icon}
+            name={locked ? "lock-closed" : lesson.icon}
             size={28}
-            color={Colors.primaryAccentColor}
+            color={locked ? Colors.subduedTextColor : Colors.primaryAccentColor}
           />
           <View style={styles.lessonTextContainer}>
             <ThemedText style={styles.lessonTitle}>{lesson.title}</ThemedText>
-            {renderCompletionStatus(completionCount)}
+            {!locked && renderCompletionStatus(completionCount)}
           </View>
         </TouchableOpacity>
       </View>
@@ -194,39 +223,95 @@ export default function LessonsContent() {
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
         >
-          {COURSE_DATA.chapters.map((chapter) => (
-            <View key={chapter.id} style={styles.chapterContainer}>
-              <View style={styles.chapterHeader}>
-                <Text style={styles.chapterNumberText}>
-                  CHAPTER {chapter.id}
+          {/* Premium upsell banner */}
+          {!isPremium && (
+            <TouchableOpacity
+              style={styles.premiumBanner}
+              onPress={() => setPaywallVisible(true)}
+            >
+              <Ionicons name="star" size={20} color="#FFF" />
+              <View style={styles.premiumBannerText}>
+                <Text style={styles.premiumBannerTitle}>
+                  Unlock all 12 chapters
                 </Text>
-                <ThemedText type="title" style={styles.chapterTitleText}>
-                  {chapter.title}
-                </ThemedText>
+                <Text style={styles.premiumBannerSubtitle}>
+                  Start your free 7-day trial
+                </Text>
               </View>
+              <Ionicons name="chevron-forward" size={20} color="#FFF" />
+            </TouchableOpacity>
+          )}
 
-              <View style={styles.lessonsWrapper}>
-                {chapter.lessons.map(renderLessonNode)}
-              </View>
+          {chapters.map((chapter, chapterIndex) => {
+            const locked =
+              !!activePack &&
+              !canAccessChapter(activePack, chapterIndex, isPremium);
 
-              {chapter.review && (
-                <TouchableOpacity
-                  style={[
-                    styles.practiceChapterButton,
-                    { backgroundColor: Colors.primaryAccentColor },
-                  ]}
-                  onPress={() => handlePractiseChapterPress(chapter)}
-                >
-                  <Ionicons name="flash" size={20} color="#FFF" />
-                  <ThemedText style={styles.practiceChapterButtonText}>
-                    Review '{chapter.title}'
+            return (
+              <View key={chapter.id} style={styles.chapterContainer}>
+                <View style={styles.chapterHeader}>
+                  <View style={styles.chapterHeaderRow}>
+                    <Text style={styles.chapterNumberText}>
+                      CHAPTER {chapter.id}
+                    </Text>
+                    {locked && (
+                      <View style={styles.premiumBadge}>
+                        <Ionicons
+                          name="lock-closed"
+                          size={10}
+                          color="#FFF"
+                        />
+                        <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+                      </View>
+                    )}
+                  </View>
+                  <ThemedText type="title" style={styles.chapterTitleText}>
+                    {chapter.title}
                   </ThemedText>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
+                </View>
+
+                <View style={styles.lessonsWrapper}>
+                  {chapter.lessons.map((lesson, lessonIndex) =>
+                    renderLessonNode(lesson, lessonIndex, chapterIndex, locked),
+                  )}
+                </View>
+
+                {chapter.review && (
+                  <TouchableOpacity
+                    style={[
+                      styles.practiceChapterButton,
+                      {
+                        backgroundColor: locked
+                          ? Colors.subduedTextColor
+                          : Colors.primaryAccentColor,
+                      },
+                    ]}
+                    onPress={() =>
+                      handlePractiseChapterPress(chapter, chapterIndex)
+                    }
+                  >
+                    <Ionicons
+                      name={locked ? "lock-closed" : "flash"}
+                      size={20}
+                      color="#FFF"
+                    />
+                    <ThemedText style={styles.practiceChapterButtonText}>
+                      {locked
+                        ? "Unlock to review"
+                        : `Review '${chapter.title}'`}
+                    </ThemedText>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })}
         </ScrollView>
       </View>
+
+      <Paywall
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -271,7 +356,7 @@ const styles = StyleSheet.create({
   statChangePositive: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#34C759", // Green for positive change
+    color: "#34C759",
   },
   statLabel: {
     fontSize: 11,
@@ -281,7 +366,7 @@ const styles = StyleSheet.create({
   headerSeparator: {
     width: 1,
     height: 24,
-    marginRight: -8, // Adjust spacing
+    marginRight: -8,
   },
   scrollContainer: {
     paddingTop: 24,
@@ -345,6 +430,54 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 14,
     fontWeight: "bold",
+  },
+  premiumBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primaryAccentColor,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 6,
+  },
+  premiumBannerText: {
+    flex: 1,
+  },
+  premiumBannerTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFF",
+  },
+  premiumBannerSubtitle: {
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.9)",
+    marginTop: 2,
+  },
+  chapterHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  premiumBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primaryAccentColor,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    gap: 4,
+  },
+  premiumBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#FFF",
+    letterSpacing: 0.5,
   },
   practiceChapterButton: {
     flexDirection: "row",

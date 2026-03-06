@@ -1,4 +1,6 @@
 import { Colors } from "@/constants/theme";
+import { useAccessibility } from "@/ctx/AccessibilityContext";
+import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef } from "react";
@@ -22,15 +24,19 @@ export default function LessonCompleteScreen({
   onContinue: () => void;
   onReview: () => void;
 }) {
+  const { hasRomanization } = useLanguage();
+  const { shouldAnimate } = useAccessibility();
   const confettiRef = useRef<any>(null);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    setTimeout(() => {
-      confettiRef.current?.start();
-    }, 400);
+    if (shouldAnimate()) {
+      setTimeout(() => {
+        confettiRef.current?.start();
+      }, 400);
+    }
 
     Animated.parallel([
       Animated.spring(scaleAnim, {
@@ -164,20 +170,22 @@ export default function LessonCompleteScreen({
                     <Ionicons name="close-circle" size={20} color="#ef4444" />
                   </View>
                   <View style={styles.questionContent}>
-                    <ThemedText style={styles.questionEnglish}>
-                      {question.english}
+                    <ThemedText style={styles.questionTranslation}>
+                      {question.translation}
                     </ThemedText>
-                    <View style={styles.questionMandarin}>
-                      <ThemedText style={styles.questionPinyin}>
-                        {question.mandarin.pinyin}
-                      </ThemedText>
+                    <View style={styles.questionPhrase}>
+                      {hasRomanization() && question.romanization && (
+                        <ThemedText style={styles.questionRomanization}>
+                          {question.romanization}
+                        </ThemedText>
+                      )}
                       <ThemedText
                         style={[
-                          styles.questionHanzi,
+                          styles.questionNativeScript,
                           { color: Colors.subduedTextColor },
                         ]}
                       >
-                        {question.mandarin.hanzi}
+                        {question.nativeScript}
                       </ThemedText>
                     </View>
                   </View>
@@ -238,22 +246,24 @@ export default function LessonCompleteScreen({
           )}
       </Animated.View>
 
-      <ConfettiCannon
-        ref={confettiRef}
-        count={200}
-        origin={{ x: -10, y: 0 }}
-        autoStart={false}
-        fadeOut={true}
-        fallSpeed={4000}
-        explosionSpeed={350}
-        colors={[
-          Colors.primaryAccentColor,
-          "#ff6b35",
-          "#FFD700",
-          "#34C759",
-          "#FF9F0A",
-        ]}
-      />
+      {shouldAnimate() && (
+        <ConfettiCannon
+          ref={confettiRef}
+          count={200}
+          origin={{ x: -10, y: 0 }}
+          autoStart={false}
+          fadeOut={true}
+          fallSpeed={4000}
+          explosionSpeed={350}
+          colors={[
+            Colors.primaryAccentColor,
+            "#ff6b35",
+            "#FFD700",
+            "#34C759",
+            "#FF9F0A",
+          ]}
+        />
+      )}
     </View>
   );
 }
@@ -375,19 +385,19 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  questionEnglish: {
+  questionTranslation: {
     fontSize: 17,
     fontWeight: "600",
     marginBottom: 8,
   },
-  questionMandarin: {
+  questionPhrase: {
     gap: 4,
   },
-  questionPinyin: {
+  questionRomanization: {
     fontSize: 16,
     fontWeight: "600",
   },
-  questionHanzi: {
+  questionNativeScript: {
     fontSize: 15,
   },
   attemptsIndicator: {

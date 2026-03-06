@@ -1,8 +1,9 @@
 import { Paywall } from "@/components/subscription/Paywall";
 import { ThemedText } from "@/components/themed-text";
-import { ConversationScenario, COURSE_DATA } from "@/constants/CourseData";
+import { ConversationScenario } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/ctx/AuthContext";
+import { useLanguage } from "@/ctx/LanguageContext";
 import {
   createCustomScenarioId,
   listCustomScenarios,
@@ -26,6 +27,7 @@ import { toast } from "sonner-native";
 
 export default function ConversationsScreen() {
   const { isPremium } = useAuth();
+  const { activePack, activeLanguage, hasRomanization } = useLanguage();
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [isPhrasebookOpen, setIsPhrasebookOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] =
@@ -38,6 +40,8 @@ export default function ConversationsScreen() {
   const [customScenarios, setCustomScenarios] = useState<
     ConversationScenario[]
   >([]);
+
+  const scenarios = activePack?.scenarios ?? [];
 
   useFocusEffect(
     useCallback(() => {
@@ -108,6 +112,7 @@ export default function ConversationsScreen() {
             myRole: customMyRole,
             aiRole: customAiRole,
             sceneDescription: customScene,
+            languageCode: activeLanguage.code,
           },
         },
       );
@@ -184,10 +189,10 @@ export default function ConversationsScreen() {
                   style={{ marginBottom: 8 }}
                 />
                 <ThemedText style={styles.premiumTitle}>
-                  Get full access to Convo
+                  Get full access to Lumora
                 </ThemedText>
                 <ThemedText style={styles.premiumSubtitle}>
-                  Unlock Convo Premium to get access to custom scenarios and
+                  Unlock Lumora Premium to get access to custom scenarios and
                   more
                 </ThemedText>
                 <View style={styles.premiumButton}>
@@ -226,7 +231,7 @@ export default function ConversationsScreen() {
 
           {/* Scenarios grid */}
           <View style={styles.gridContainer}>
-            {[...customScenarios, ...COURSE_DATA.scenarios].map((scenario) => (
+            {[...customScenarios, ...scenarios].map((scenario) => (
               <TouchableOpacity
                 key={scenario.id}
                 style={[
@@ -333,7 +338,7 @@ export default function ConversationsScreen() {
               {isPhrasebookOpen ? (
                 (selectedScenario?.phrasebook ?? []).map((p, idx) => (
                   <View
-                    key={`${p.hanzi}-${idx}`}
+                    key={`${p.nativeScript}-${idx}`}
                     style={[
                       styles.phraseRow,
                       {
@@ -341,12 +346,16 @@ export default function ConversationsScreen() {
                       },
                     ]}
                   >
-                    <ThemedText style={styles.phraseZh}>{p.hanzi}</ThemedText>
-                    <ThemedText style={{ color: Colors.subduedTextColor }}>
-                      {p.pinyin}
+                    <ThemedText style={styles.phraseNativeScript}>
+                      {p.nativeScript}
                     </ThemedText>
+                    {hasRomanization() && p.romanization && (
+                      <ThemedText style={{ color: Colors.subduedTextColor }}>
+                        {p.romanization}
+                      </ThemedText>
+                    )}
                     <ThemedText style={{ color: Colors.subduedTextColor }}>
-                      {p.english}
+                      {p.translation}
                     </ThemedText>
                   </View>
                 ))
@@ -859,7 +868,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 12,
   },
-  phraseZh: {
+  phraseNativeScript: {
     fontSize: 20,
     fontWeight: "600",
     marginBottom: 4,

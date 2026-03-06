@@ -1,4 +1,4 @@
-import { ListeningOption } from "@/constants/CourseData";
+import { ListeningOption } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
 import {
   Platform,
@@ -55,9 +55,12 @@ export default function ListeningMultipleChoiceMode({
               ]}
               onPress={() => handleOptionPress(option.id)}
               disabled={isLoading || showResult}
+              accessibilityRole="button"
+              accessibilityLabel={`Answer option: ${option.translation}`}
+              accessibilityState={{ selected: isSelected, disabled: isLoading || showResult }}
             >
               <ThemedText style={styles.optionText}>
-                {option.english}
+                {option.translation}
               </ThemedText>
             </Pressable>
           );

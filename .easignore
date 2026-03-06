@@ -1,0 +1,46 @@
+# EAS build ignore — same as .gitignore but .env is INCLUDED
+# so EXPO_PUBLIC_* vars are baked into the JS bundle at build time.
+
+# dependencies
+node_modules/
+
+supabase/.temp
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+app-example
+
+# generated native folders
+/ios
+/android

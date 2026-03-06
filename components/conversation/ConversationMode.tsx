@@ -1,6 +1,10 @@
-import { ConversationScenario } from "@/constants/CourseData";
+import { ConversationScenario } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
-import { recordConversationTurn } from "@/lib/speakingListeningStats";
+import { useAccessibility } from "@/ctx/AccessibilityContext";
+import { useLanguage } from "@/ctx/LanguageContext";
+import { recordConversationTurn } from "@/lib/services/stats-service";
+import { logLearningEvent, EVENTS } from "@/lib/services/event-service";
+import { useAuth } from "@/ctx/AuthContext";
 import { supabase } from "@/utils/supabase";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Audio, InterruptionModeIOS } from "expo-av";
@@ -28,9 +32,9 @@ interface Message {
   id: string;
   role: "user" | "assistant";
   text: string;
-  hanzi?: string;
-  pinyin?: string;
-  english?: string;
+  nativeScript?: string;
+  romanization?: string;
+  translation?: string;
 }
 
 export default function ConversationMode({
@@ -41,7 +45,10 @@ export default function ConversationMode({
   onExit: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const [showPinyin, setShowPinyin] = useState(false);
+  const { activeLanguage, hasRomanization, getNativeScriptLabel, getRomanizationLabel } = useLanguage();
+  const { user } = useAuth();
+  const { preferences, shouldAnimate } = useAccessibility();
+  const [showRomanization, setShowRomanization] = useState(false);
   const [isBlurred, setIsBlurred] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -50,16 +57,26 @@ export default function ConversationMode({
   const scrollViewRef = useRef<ScrollView>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const lastSpokenAssistantMessageId = useRef<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([
-    {
+
+  // Build initial greeting based on language
+  const getInitialGreeting = (): Message => {
+    const greetings: Record<string, { nativeScript: string; romanization?: string; translation: string }> = {
+      "zh-CN": { nativeScript: "你好！", romanization: "Nǐ hǎo!", translation: "Hello!" },
+      "es": { nativeScript: "¡Hola!", translation: "Hello!" },
+      "hi": { nativeScript: "नमस्ते!", romanization: "Namaste!", translation: "Hello!" },
+    };
+    const greeting = greetings[activeLanguage.code] ?? greetings["zh-CN"];
+    return {
       id: "1",
       role: "assistant",
-      text: "你好！",
-      hanzi: "你好！",
-      pinyin: "Nǐ hǎo!",
-      english: "Hello!",
-    },
-  ]);
+      text: greeting.nativeScript,
+      nativeScript: greeting.nativeScript,
+      romanization: greeting.romanization,
+      translation: greeting.translation,
+    };
+  };
+
+  const [messages, setMessages] = useState<Message[]>([getInitialGreeting()]);
 
   const confettiRef = useRef<any>(null);
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -82,7 +99,7 @@ export default function ConversationMode({
 
   const handlePlayAudio = (text: string) => {
     Speech.stop();
-    Speech.speak(text, { language: "zh-CN" });
+    Speech.speak(text, { language: activeLanguage.ttsCode, rate: preferences.audioSpeed });
   };
 
   const callChatCompletion = async (params: {
@@ -97,6 +114,7 @@ export default function ConversationMode({
         })),
         scenario,
         inputAudio: params.inputAudio,
+        languageCode: activeLanguage.code,
       },
     });
 
@@ -123,18 +141,20 @@ export default function ConversationMode({
         data.userTranscript.trim()
       ) {
         const transcript = data.userTranscript.trim();
-        const transcriptPinyin =
-          typeof data.userTranscriptPinyin === "string"
-            ? data.userTranscriptPinyin.trim()
-            : undefined;
+        const transcriptRomanization =
+          typeof data.userTranscriptRomanization === "string"
+            ? data.userTranscriptRomanization.trim()
+            : typeof data.userTranscriptPinyin === "string"
+              ? data.userTranscriptPinyin.trim()
+              : undefined;
 
         newMessages = newMessages.map((m) =>
           m.id === options.replaceUserMessageId
             ? {
                 ...m,
                 text: transcript,
-                hanzi: transcript,
-                pinyin: transcriptPinyin || m.pinyin,
+                nativeScript: transcript,
+                romanization: transcriptRomanization || m.romanization,
               }
             : m,
         );
@@ -143,10 +163,10 @@ export default function ConversationMode({
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        text: data.text || data.hanzi,
-        hanzi: data.hanzi,
-        pinyin: data.pinyin,
-        english: data.english,
+        text: data.text || data.nativeScript || data.hanzi,
+        nativeScript: data.nativeScript || data.hanzi,
+        romanization: data.romanization || data.pinyin,
+        translation: data.translation || data.english,
       };
 
       return [...newMessages, aiResponse];
@@ -267,7 +287,13 @@ export default function ConversationMode({
         },
       });
       handleAssistantData(data, { replaceUserMessageId: voiceMessageId });
-      void recordConversationTurn();
+      void recordConversationTurn(user?.id);
+      if (user?.id) {
+        void logLearningEvent(user.id, EVENTS.CONVERSATION_TURN, {
+          inputType: "voice",
+          scenarioId: scenario.id,
+        });
+      }
     } catch (err) {
       console.error("Failed to start/stop recording:", err);
       setIsLoading(false);
@@ -297,7 +323,13 @@ export default function ConversationMode({
         messageList: [...messages, newMessage],
       });
       handleAssistantData(data);
-      void recordConversationTurn();
+      void recordConversationTurn(user?.id);
+      if (user?.id) {
+        void logLearningEvent(user.id, EVENTS.CONVERSATION_TURN, {
+          inputType: "text",
+          scenarioId: scenario.id,
+        });
+      }
     } catch (err) {
       console.error("Message sending error:", err);
     } finally {
@@ -312,7 +344,7 @@ export default function ConversationMode({
     if (lastSpokenAssistantMessageId.current === lastMessage.id) return;
     lastSpokenAssistantMessageId.current = lastMessage.id;
 
-    const speechText = lastMessage.hanzi || lastMessage.text;
+    const speechText = lastMessage.nativeScript || lastMessage.text;
     if (!speechText) return;
 
     const timeoutId = setTimeout(() => {
@@ -321,6 +353,13 @@ export default function ConversationMode({
 
     return () => clearTimeout(timeoutId);
   }, [messages]);
+
+  // Toggle label for script switching
+  const romanizationLabel = getRomanizationLabel();
+  const nativeScriptLabel = getNativeScriptLabel();
+  const toggleLabel = showRomanization
+    ? (romanizationLabel?.substring(0, 3) ?? "Rom")
+    : (nativeScriptLabel.substring(0, 3));
 
   return (
     <>
@@ -350,17 +389,23 @@ export default function ConversationMode({
             </ThemedText>
           </View>
           <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
-            <TouchableOpacity onPress={() => setShowPinyin(!showPinyin)}>
-              <ThemedText
-                style={{
-                  fontSize: 16,
-                  fontWeight: "bold",
-                  color: Colors.primaryAccentColor,
-                }}
+            {hasRomanization() && (
+              <TouchableOpacity
+                onPress={() => setShowRomanization(!showRomanization)}
+                accessibilityRole="button"
+                accessibilityLabel={showRomanization ? "Hide romanization" : "Show romanization"}
               >
-                {showPinyin ? "拼" : "汉"}
-              </ThemedText>
-            </TouchableOpacity>
+                <ThemedText
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "bold",
+                    color: Colors.primaryAccentColor,
+                  }}
+                >
+                  {toggleLabel}
+                </ThemedText>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={() => setIsBlurred(!isBlurred)}>
               <Ionicons
                 size={24}
@@ -381,10 +426,10 @@ export default function ConversationMode({
             const isUser = msg.role === "user";
             let content = msg.text;
 
-            if (showPinyin) {
-              content = msg.pinyin || msg.text;
+            if (showRomanization) {
+              content = msg.romanization || msg.text;
             } else {
-              content = msg.hanzi || msg.text;
+              content = msg.nativeScript || msg.text;
             }
 
             return (
@@ -422,7 +467,9 @@ export default function ConversationMode({
                 {!isUser && (
                   <TouchableOpacity
                     style={styles.audioButton}
-                    onPress={() => handlePlayAudio(msg.hanzi || msg.text)}
+                    onPress={() => handlePlayAudio(msg.nativeScript || msg.text)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Play message audio"
                   >
                     <Ionicons
                       name="volume-high"
@@ -488,12 +535,17 @@ export default function ConversationMode({
               value={inputText}
               onChangeText={setInputText}
               multiline
+              accessibilityLabel="Message input"
+              accessibilityHint="Type your message in the target language"
             />
           </View>
           <TouchableOpacity
             onPress={handleSend}
             style={[styles.sendButton, !inputText.trim() && { opacity: 0.5 }]}
             disabled={!inputText.trim() || isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Send message"
+            accessibilityState={{ disabled: !inputText.trim() || isLoading }}
           >
             {isLoading ? (
               <ActivityIndicator color="white" size="small" />
@@ -548,22 +600,24 @@ export default function ConversationMode({
           </Animated.View>
         </View>
 
-        <ConfettiCannon
-          ref={confettiRef}
-          count={200}
-          origin={{ x: -10, y: 0 }}
-          autoStart={false}
-          fadeOut={true}
-          fallSpeed={4000}
-          explosionSpeed={350}
-          colors={[
-            Colors.primaryAccentColor,
-            "#ff6b35",
-            "#FFD700",
-            "#34C759",
-            "#FF9F0A",
-          ]}
-        />
+        {shouldAnimate() && (
+          <ConfettiCannon
+            ref={confettiRef}
+            count={200}
+            origin={{ x: -10, y: 0 }}
+            autoStart={false}
+            fadeOut={true}
+            fallSpeed={4000}
+            explosionSpeed={350}
+            colors={[
+              Colors.primaryAccentColor,
+              "#ff6b35",
+              "#FFD700",
+              "#34C759",
+              "#FF9F0A",
+            ]}
+          />
+        )}
       </Modal>
     </>
   );

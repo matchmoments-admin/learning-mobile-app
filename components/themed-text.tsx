@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
+import { useAccessibility } from '@/ctx/AccessibilityContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 export type ThemedTextProps = TextProps & {
@@ -16,6 +18,17 @@ export function ThemedText({
   ...rest
 }: ThemedTextProps) {
   const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const { getScaledFontSize } = useAccessibility();
+
+  const scaledStyles = useMemo(() => {
+    const base = typeStyles[type] ?? typeStyles.default;
+    return {
+      fontSize: getScaledFontSize(base.fontSize),
+      ...(base.lineHeight != null
+        ? { lineHeight: getScaledFontSize(base.lineHeight) }
+        : {}),
+    };
+  }, [type, getScaledFontSize]);
 
   return (
     <Text
@@ -26,12 +39,21 @@ export function ThemedText({
         type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,
         type === 'subtitle' ? styles.subtitle : undefined,
         type === 'link' ? styles.link : undefined,
+        scaledStyles,
         style,
       ]}
       {...rest}
     />
   );
 }
+
+const typeStyles: Record<string, { fontSize: number; lineHeight?: number }> = {
+  default: { fontSize: 16, lineHeight: 24 },
+  defaultSemiBold: { fontSize: 16, lineHeight: 24 },
+  title: { fontSize: 32, lineHeight: 32 },
+  subtitle: { fontSize: 20 },
+  link: { fontSize: 16, lineHeight: 30 },
+};
 
 const styles = StyleSheet.create({
   default: {

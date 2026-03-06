@@ -1,4 +1,5 @@
-import { Word } from "@/constants/CourseData";
+import { Term } from "@/constants/ContentTypes";
+import { useLanguage } from "@/ctx/LanguageContext";
 import { useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { ThemedText } from "../themed-text";
@@ -7,9 +8,10 @@ export default function Flashcard({
   word,
   direction,
 }: {
-  word: Word;
-  direction: "en-zh" | "zh-en";
+  word: Term;
+  direction: "native-to-translation" | "translation-to-native";
 }) {
+  const { hasRomanization } = useLanguage();
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnimation = useRef(new Animated.Value(0)).current;
 
@@ -49,44 +51,54 @@ export default function Flashcard({
     setIsFlipped(true);
   };
 
-  const FrontContent = () => {
-    if (direction === "en-zh") {
-      return (
-        <ThemedText style={styles.englishFront}>{word.english}</ThemedText>
-      );
-    }
+  const NativeContent = ({ isBack }: { isBack?: boolean }) => (
+    <View style={styles.nativeContent}>
+      {hasRomanization() && word.romanization && (
+        <ThemedText
+          style={[styles.romanization, isBack && styles.backText]}
+        >
+          {word.romanization}
+        </ThemedText>
+      )}
+      <ThemedText
+        style={[styles.nativeScript, isBack && styles.backText]}
+      >
+        {word.nativeScript}
+      </ThemedText>
+    </View>
+  );
 
-    return (
-      <View style={styles.mandarinContent}>
-        <ThemedText style={styles.pinyin}>{word.pinyin}</ThemedText>
-        <ThemedText style={styles.hanzi}>{word.hanzi}</ThemedText>
-      </View>
-    );
+  const TranslationContent = ({ isBack }: { isBack?: boolean }) => (
+    <ThemedText
+      style={[
+        isBack ? styles.translationBack : styles.translationFront,
+        isBack && styles.backText,
+      ]}
+    >
+      {word.translation}
+    </ThemedText>
+  );
+
+  const FrontContent = () => {
+    if (direction === "translation-to-native") {
+      return <TranslationContent />;
+    }
+    return <NativeContent />;
   };
 
   const BackContent = () => {
-    if (direction === "en-zh") {
-      return (
-        <View style={styles.mandarinContent}>
-          <ThemedText style={[styles.pinyin, styles.mandarinBackText]}>
-            {word.pinyin}
-          </ThemedText>
-          <ThemedText style={[styles.hanzi, styles.mandarinBackText]}>
-            {word.hanzi}
-          </ThemedText>
-        </View>
-      );
+    if (direction === "translation-to-native") {
+      return <NativeContent isBack />;
     }
-
-    return (
-      <ThemedText style={[styles.englishBack, styles.mandarinBackText]}>
-        {word.english}
-      </ThemedText>
-    );
+    return <TranslationContent isBack />;
   };
 
   return (
-    <Pressable onPress={isFlipped ? flipToFront : flipToBack}>
+    <Pressable
+      onPress={isFlipped ? flipToFront : flipToBack}
+      accessibilityRole="button"
+      accessibilityLabel={isFlipped ? "Flashcard showing answer. Tap to flip back" : "Flashcard. Tap to reveal answer"}
+    >
       <View>
         <Animated.View
           style={[styles.card, styles.cardFront, frontAnimatedStyle]}
@@ -130,36 +142,36 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
   },
-  mandarinContent: {
+  nativeContent: {
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
     width: "100%",
   },
-  pinyin: {
+  romanization: {
     fontSize: 40,
     lineHeight: 48,
     fontWeight: "600",
     textAlign: "center",
     maxWidth: "90%",
   },
-  hanzi: {
+  nativeScript: {
     fontSize: 30,
     lineHeight: 36,
     textAlign: "center",
     maxWidth: "90%",
   },
-  mandarinBackText: {
+  backText: {
     color: "white",
   },
-  englishFront: {
+  translationFront: {
     fontSize: 40,
     lineHeight: 48,
     textAlign: "center",
     fontWeight: "600",
     maxWidth: "90%",
   },
-  englishBack: {
+  translationBack: {
     fontSize: 40,
     lineHeight: 48,
     textAlign: "center",

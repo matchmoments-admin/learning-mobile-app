@@ -1,7 +1,9 @@
 import { Paywall } from "@/components/subscription/Paywall";
 import { ThemedText } from "@/components/themed-text";
+import { LANGUAGES } from "@/constants/Languages";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/ctx/AuthContext";
+import { useLanguage } from "@/ctx/LanguageContext";
 import { supabase } from "@/utils/supabase";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
@@ -18,6 +20,43 @@ import {
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
+
+const SUBJECTS = [
+  {
+    id: "languages",
+    title: "Languages",
+    icon: "language-outline" as const,
+    description: "Learn to speak a new language",
+  },
+  {
+    id: "mathematics",
+    title: "Mathematics",
+    icon: "calculator-outline" as const,
+    description: "Coming soon",
+    disabled: true,
+  },
+  {
+    id: "science",
+    title: "Science",
+    icon: "flask-outline" as const,
+    description: "Coming soon",
+    disabled: true,
+  },
+  {
+    id: "history",
+    title: "History",
+    icon: "book-outline" as const,
+    description: "Coming soon",
+    disabled: true,
+  },
+];
+
+const LANGUAGE_OPTIONS = Object.values(LANGUAGES).map((lang) => ({
+  id: lang.code,
+  title: lang.displayName,
+  nativeName: lang.nativeName,
+  hasContent: lang.hasContent,
+}));
 
 const LEVELS = [
   {
@@ -76,11 +115,16 @@ const INTERESTS = [
   "Sports",
 ];
 
+const TOTAL_STEPS = 6;
+
 export default function OnboardingScreen() {
   const colors = Colors["light"];
+  const { setActiveLanguageCode } = useLanguage();
 
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [level, setLevel] = useState<string | null>(null);
   const [motivations, setMotivations] = useState<string[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -90,7 +134,12 @@ export default function OnboardingScreen() {
 
   const handleBack = () => {
     if (step > 0) {
-      setStep(step - 1);
+      // Skip language step when going back if not on languages subject
+      if (step === 3 && selectedSubject !== "languages") {
+        setStep(1);
+      } else {
+        setStep(step - 1);
+      }
     } else {
       router.back();
     }
@@ -98,9 +147,11 @@ export default function OnboardingScreen() {
 
   const isNextEnabled = () => {
     if (step === 0) return name.trim().length > 0;
-    if (step === 1) return !!level;
-    if (step === 2) return motivations.length > 0;
-    if (step === 3) return selectedInterests.length > 0;
+    if (step === 1) return !!selectedSubject;
+    if (step === 2) return !!selectedLanguage;
+    if (step === 3) return !!level;
+    if (step === 4) return motivations.length > 0;
+    if (step === 5) return selectedInterests.length > 0;
     return false;
   };
 
@@ -109,12 +160,11 @@ export default function OnboardingScreen() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Now user found");
+      if (!user) throw new Error("No user found");
 
       const { error } = await supabase.from("profiles").upsert({
         id: user.id,
         full_name: name,
-        chinese_level: level,
         motivations: motivations,
         interests: selectedInterests,
         onboarding_completed: true,
@@ -123,17 +173,25 @@ export default function OnboardingScreen() {
 
       if (error) throw error;
 
+      // Set active language in context
+      if (selectedLanguage) {
+        setActiveLanguageCode(selectedLanguage);
+      }
+
       await refreshProfile();
 
       setShowPaywall(true);
     } catch (err) {
       console.error("Error saving profile:", err);
-      toast.error("Failed to save your profile. Plase try again.");
+      toast.error("Failed to save your profile. Please try again.");
     }
   };
 
   const handleContinue = () => {
-    if (step < 3) {
+    if (step === 1 && selectedSubject !== "languages") {
+      // Skip language selection for non-language subjects
+      setStep(3);
+    } else if (step < TOTAL_STEPS - 1) {
       setStep(step + 1);
     } else {
       saveProfile();
@@ -156,6 +214,10 @@ export default function OnboardingScreen() {
     }
   };
 
+  const selectedLangConfig = selectedLanguage
+    ? LANGUAGES[selectedLanguage]
+    : null;
+
   const renderStep0Name = () => (
     <View style={styles.stepContainer}>
       <ThemedText type="title" style={styles.title}>
@@ -176,10 +238,109 @@ export default function OnboardingScreen() {
     </View>
   );
 
-  const renderStep1Level = () => (
+  const renderStep1Subject = () => (
     <View style={styles.stepContainer}>
       <ThemedText type="title" style={styles.title}>
-        How much Chinese do you know?
+        What would you like to learn?
+      </ThemedText>
+
+      <ScrollView
+        contentContainerStyle={{ rowGap: 16 }}
+        style={{ marginTop: 20 }}
+      >
+        {SUBJECTS.map((s) => (
+          <TouchableOpacity
+            key={s.id}
+            disabled={s.disabled}
+            style={[
+              styles.optionCard,
+              styles.motivationCard,
+              selectedSubject === s.id && {
+                borderColor: Colors.primaryAccentColor,
+              },
+              s.disabled && { opacity: 0.5 },
+            ]}
+            onPress={() => setSelectedSubject(s.id)}
+          >
+            <Ionicons
+              name={s.icon as any}
+              size={24}
+              color={
+                selectedSubject === s.id
+                  ? Colors.primaryAccentColor
+                  : colors.icon
+              }
+            />
+            <View style={{ flex: 1 }}>
+              <ThemedText
+                style={[
+                  styles.optionTitle,
+                  selectedSubject === s.id && {
+                    color: Colors.primaryAccentColor,
+                  },
+                ]}
+              >
+                {s.title}
+              </ThemedText>
+              <ThemedText style={styles.optionDescription}>
+                {s.description}
+              </ThemedText>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+
+  const renderStep2Language = () => (
+    <View style={styles.stepContainer}>
+      <ThemedText type="title" style={styles.title}>
+        Which language?
+      </ThemedText>
+
+      <ScrollView
+        contentContainerStyle={{ rowGap: 16 }}
+        style={{ marginTop: 20 }}
+      >
+        {LANGUAGE_OPTIONS.map((lang) => (
+          <TouchableOpacity
+            key={lang.id}
+            disabled={!lang.hasContent}
+            style={[
+              styles.optionCard,
+              styles.motivationCard,
+              selectedLanguage === lang.id && {
+                borderColor: Colors.primaryAccentColor,
+              },
+              !lang.hasContent && { opacity: 0.5 },
+            ]}
+            onPress={() => setSelectedLanguage(lang.id)}
+          >
+            <View style={{ flex: 1 }}>
+              <ThemedText
+                style={[
+                  styles.optionTitle,
+                  selectedLanguage === lang.id && {
+                    color: Colors.primaryAccentColor,
+                  },
+                ]}
+              >
+                {lang.title}
+              </ThemedText>
+              <ThemedText style={styles.optionDescription}>
+                {lang.hasContent ? lang.nativeName : "Coming soon"}
+              </ThemedText>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+
+  const renderStep3Level = () => (
+    <View style={styles.stepContainer}>
+      <ThemedText type="title" style={styles.title}>
+        How much {selectedLangConfig?.displayName ?? "do you"} know?
       </ThemedText>
 
       <ScrollView
@@ -193,7 +354,6 @@ export default function OnboardingScreen() {
               styles.optionCard,
               level === l.id && {
                 borderColor: Colors.primaryAccentColor,
-                backgroundClip: "#fff5f0",
               },
             ]}
             onPress={() => setLevel(l.id)}
@@ -215,12 +375,12 @@ export default function OnboardingScreen() {
     </View>
   );
 
-  const renderStep2Motivation = () => (
+  const renderStep4Motivation = () => (
     <View style={styles.stepContainer}>
       <ThemedText type="title" style={styles.title}>
-        Why are you learning Chinese?
+        Why are you learning?
       </ThemedText>
-      <ThemedText style={styles.subtitle}>Select all the apply.</ThemedText>
+      <ThemedText style={styles.subtitle}>Select all that apply.</ThemedText>
 
       <ScrollView
         contentContainerStyle={{ rowGap: 16 }}
@@ -237,7 +397,6 @@ export default function OnboardingScreen() {
                 styles.motivationCard,
                 isSelected && {
                   borderColor: Colors.primaryAccentColor,
-                  backgroundClip: "#fff5f0",
                 },
               ]}
               onPress={() => toggleMotivation(m.id)}
@@ -262,12 +421,12 @@ export default function OnboardingScreen() {
     </View>
   );
 
-  const renderStep3Interests = () => (
+  const renderStep5Interests = () => (
     <View style={styles.stepContainer}>
       <ThemedText type="title" style={styles.title}>
         What are you interested in?
       </ThemedText>
-      <ThemedText style={styles.subtitle}>Select all the apply.</ThemedText>
+      <ThemedText style={styles.subtitle}>Select all that apply.</ThemedText>
 
       <View style={styles.tagsContainer}>
         {INTERESTS.map((i) => {
@@ -297,6 +456,10 @@ export default function OnboardingScreen() {
     </View>
   );
 
+  // Calculate effective progress (accounting for skipped steps)
+  const effectiveStep = step;
+  const progressWidth = `${((effectiveStep + 1) / TOTAL_STEPS) * 100}%`;
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -316,7 +479,7 @@ export default function OnboardingScreen() {
               style={[
                 styles.progressBar,
                 {
-                  width: `${((step + 1) / 4) * 100}%`,
+                  width: progressWidth as any,
                   backgroundColor: Colors.primaryAccentColor,
                 },
               ]}
@@ -331,9 +494,11 @@ export default function OnboardingScreen() {
             style={{ flex: 1 }}
           >
             {step === 0 && renderStep0Name()}
-            {step === 1 && renderStep1Level()}
-            {step === 2 && renderStep2Motivation()}
-            {step === 3 && renderStep3Interests()}
+            {step === 1 && renderStep1Subject()}
+            {step === 2 && renderStep2Language()}
+            {step === 3 && renderStep3Level()}
+            {step === 4 && renderStep4Motivation()}
+            {step === 5 && renderStep5Interests()}
           </Animated.View>
         </View>
 
@@ -351,7 +516,7 @@ export default function OnboardingScreen() {
             disabled={!isNextEnabled()}
           >
             <ThemedText style={styles.continueButtonText}>
-              {step === 3 ? "Get Started" : "Continue"}
+              {step === TOTAL_STEPS - 1 ? "Get Started" : "Continue"}
             </ThemedText>
           </TouchableOpacity>
         </View>

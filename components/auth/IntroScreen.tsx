@@ -33,6 +33,7 @@ import EmailAuth from "./EmailAuth";
 
 const { width, height } = Dimensions.get("window");
 const videoSource = require("../../assets/videos/broll.mp4");
+// TODO: Replace with Lumora logo asset when available
 const logoSource = require("../../assets/images/convo-minimal.png");
 
 const MENU_HEIGHT = 250;
@@ -54,7 +55,7 @@ export default function IntroScreen() {
     EBGaramond_500Medium_Italic,
   });
 
-  const mainTextWords: string[] = ["Learn", "Mandarin", "the", "right", "way"];
+  const mainTextWords: string[] = ["Learn", "anything.", "Your", "way."];
   const scriptPhrases: string[] = [
     "Speaking",
     "Listening",
@@ -243,7 +244,7 @@ export default function IntroScreen() {
       <View style={styles.logoSection}>
         <View style={styles.logoContainer}>
           <Image source={logoSource} style={styles.logo} />
-          <Text style={styles.appName}>Convo</Text>
+          <Text style={styles.appName}>Lumora</Text>
         </View>
         <View style={styles.statsContainer}>
           <Text style={styles.rating}>Start today</Text>

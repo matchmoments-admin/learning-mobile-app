@@ -147,7 +147,7 @@ export default function ProfileContent() {
                     ? premiumExpiresAt
                       ? `Premium ends ${new Date(premiumExpiresAt).toLocaleDateString()}`
                       : "Unlocked premium features"
-                    : "Unlock unlimited access to all lessons"}
+                    : "Unlock all chapters & AI conversations"}
                 </ThemedText>
               </View>
             </View>

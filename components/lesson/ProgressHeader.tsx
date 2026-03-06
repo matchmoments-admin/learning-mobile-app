@@ -16,10 +16,21 @@ export default function ProgressHeader({
 }) {
   return (
     <View style={styles.header}>
-      <Pressable hitSlop={20} style={styles.closeButton} onPress={onClose}>
+      <Pressable
+        hitSlop={20}
+        style={styles.closeButton}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close lesson"
+      >
         <Ionicons name="close" size={18} color="#9ca3af" />
       </Pressable>
-      <View style={styles.progressContainer}>
+      <View
+        style={styles.progressContainer}
+        accessibilityRole="progressbar"
+        accessibilityValue={{ min: 0, max: 100, now: progress }}
+        accessibilityLabel={`Question ${currentCount} of ${totalCount}`}
+      >
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${progress}%` }]}></View>
         </View>

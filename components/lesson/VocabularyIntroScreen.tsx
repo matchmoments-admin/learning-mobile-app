@@ -1,4 +1,4 @@
-import { Question, Word } from "@/constants/CourseData";
+import { Question, Term } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -10,8 +10,8 @@ import ProgressHeader from "./ProgressHeader";
 
 interface StudyCard {
   key: string;
-  word: Word;
-  direction: "zh-en" | "en-zh";
+  word: Term;
+  direction: "native-to-translation" | "translation-to-native";
 }
 
 interface DeckBuckets {
@@ -31,17 +31,17 @@ interface StudyState {
   completed: number;
 }
 
-const getUniqueWords = (questions: Question[]): Word[] => {
-  const allWords = new Map<string, Word>();
+const getUniqueWords = (questions: Question[]): Term[] => {
+  const allWords = new Map<string, Term>();
   questions.forEach((question) => {
     const wordSource =
       question.type === "listening_mc"
-        ? question.mandarin.words
-        : question.options.flatMap((opt) => opt.mandarin.words);
+        ? question.prompt.words
+        : question.options.flatMap((opt) => opt.phrase.words);
 
     wordSource.forEach((word) => {
-      if (word && word.hanzi && !allWords.has(word.hanzi)) {
-        allWords.set(word.hanzi, word);
+      if (word && word.nativeScript && !allWords.has(word.nativeScript)) {
+        allWords.set(word.nativeScript, word);
       }
     });
   });
@@ -49,17 +49,17 @@ const getUniqueWords = (questions: Question[]): Word[] => {
   return Array.from(allWords.values());
 };
 
-const buildDeck = (words: Word[]): DeckBuckets => {
+const buildDeck = (words: Term[]): DeckBuckets => {
   const recognition: StudyCard[] = words.map((word) => ({
-    key: `${word.hanzi}-recognition`,
+    key: `${word.nativeScript}-recognition`,
     word,
-    direction: "zh-en",
+    direction: "native-to-translation",
   }));
 
   const recall: StudyCard[] = words.map((word) => ({
-    key: `${word.hanzi}-recall`,
+    key: `${word.nativeScript}-recall`,
     word,
-    direction: "en-zh",
+    direction: "translation-to-native",
   }));
 
   return {

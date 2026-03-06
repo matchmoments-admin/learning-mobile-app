@@ -1,8 +1,9 @@
+import "react-native-url-polyfill/auto";
+import "react-native-get-random-values";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import * as aesjs from "aes-js";
 import * as SecureStore from "expo-secure-store";
-import "react-native-get-random-values";
 
 class LargeSecureStore {
   private async _encrypt(key: string, value: string) {

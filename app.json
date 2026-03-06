@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Convo",
-    "slug": "Convo",
+    "name": "Lumora",
+    "slug": "lumora",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "convo",
+    "scheme": "lumora",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.andreasstudios.convo",
+      "bundleIdentifier": "com.lumora.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app needs microphone access for pronunciation practice."
       }
@@ -22,8 +22,11 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.andreasstudios.convo",
-      "permissions": ["android.permission.RECORD_AUDIO"]
+      "package": "com.lumora.app",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "output": "static",
@@ -52,6 +55,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7d122bf3-a19d-4b89-babe-44996ca5627b"
+      }
+    },
+    "owner": "bren.apps"
   }
 }

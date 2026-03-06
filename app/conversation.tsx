@@ -1,5 +1,6 @@
 import ConversationMode from "@/components/conversation/ConversationMode";
-import { ConversationScenario, COURSE_DATA } from "@/constants/CourseData";
+import { ConversationScenario } from "@/constants/ContentTypes";
+import { useLanguage } from "@/ctx/LanguageContext";
 import { getCustomScenario } from "@/lib/customScenarios";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -14,15 +15,18 @@ export default function ConversationScreen() {
     scenarioId?: string | string[];
     customScenarioId?: string | string[];
   }>();
+  const { activePack } = useLanguage();
 
   const scenarioId = firstParam(params.scenarioId);
   const customScenarioId = firstParam(params.customScenarioId);
 
+  const scenarios = activePack?.scenarios ?? [];
+
   const presetScenario = useMemo(() => {
     if (!scenarioId) return null;
 
-    return COURSE_DATA.scenarios.find((s) => s.id === scenarioId) ?? null;
-  }, [scenarioId]);
+    return scenarios.find((s) => s.id === scenarioId) ?? null;
+  }, [scenarioId, scenarios]);
 
   const [customScenario, setCustomScenario] =
     useState<ConversationScenario | null>(null);

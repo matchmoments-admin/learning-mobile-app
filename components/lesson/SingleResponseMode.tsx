@@ -1,5 +1,6 @@
-import { SpeakingOption } from "@/constants/CourseData";
+import { SpeakingOption } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
+import { useLanguage } from "@/ctx/LanguageContext";
 import { useState } from "react";
 import {
   Animated,
@@ -18,6 +19,7 @@ export default function SingleResponseMode({
   optionSelectionAnim: Animated.Value;
 }) {
   const [showAnswer, setShowAnswer] = useState(false);
+  const { activeLanguage, hasRomanization } = useLanguage();
 
   return (
     <View style={{ flex: 1 }}>
@@ -39,37 +41,42 @@ export default function SingleResponseMode({
           ]}
         >
           <ThemedText style={styles.sayItPrompt}>
-            Record this response in Mandarin
+            Record this response in {activeLanguage.displayName}
           </ThemedText>
         </Animated.View>
       </View>
       <View
         style={[styles.singleResponseContainer, { backgroundColor: "#ffffff" }]}
       >
-        <ThemedText style={styles.singleResponseEnglish}>
-          {option.english}
+        <ThemedText style={styles.singleResponseTranslation}>
+          {option.translation}
         </ThemedText>
         <TouchableOpacity
           style={styles.revealButton}
           onPress={() => setShowAnswer((v) => !v)}
           hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }}
+          accessibilityRole="button"
+          accessibilityLabel={showAnswer ? "Hide answer" : "Reveal how to say it"}
+          accessibilityHint="Tap to toggle the answer"
         >
           {!showAnswer ? (
             <ThemedText style={styles.instructionText}>
               Tap here to reveal how to say it
             </ThemedText>
           ) : (
-            <View style={styles.singleResponseMandarin}>
-              <ThemedText style={styles.optionDetailsPinyin}>
-                {option.mandarin.pinyin}
-              </ThemedText>
+            <View style={styles.singleResponsePhrase}>
+              {hasRomanization() && option.phrase.romanization && (
+                <ThemedText style={styles.optionDetailsRomanization}>
+                  {option.phrase.romanization}
+                </ThemedText>
+              )}
               <ThemedText
                 style={[
-                  styles.optionDetailsHanzi,
+                  styles.optionDetailsNativeScript,
                   { color: Colors.subduedTextColor },
                 ]}
               >
-                {option.mandarin.hanzi}
+                {option.phrase.nativeScript}
               </ThemedText>
             </View>
           )}
@@ -105,11 +112,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: Colors.subduedTextColor,
   },
-  optionDetailsHanzi: {
+  optionDetailsNativeScript: {
     fontSize: 16,
     marginBottom: 4,
   },
-  optionDetailsPinyin: {
+  optionDetailsRomanization: {
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -129,12 +136,12 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  singleResponseEnglish: {
+  singleResponseTranslation: {
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
   },
-  singleResponseMandarin: {
+  singleResponsePhrase: {
     alignItems: "center",
     marginTop: 12,
   },

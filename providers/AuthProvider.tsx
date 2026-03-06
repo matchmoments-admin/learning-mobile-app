@@ -32,12 +32,17 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     const init = async () => {
-      setLoading(true);
-      const { data } = await supabase.auth.getSession();
-      const initialSession = data.session ?? null;
-      setSession(initialSession);
-      await loadProfile(initialSession);
-      setLoading(false);
+      try {
+        setLoading(true);
+        const { data } = await supabase.auth.getSession();
+        const initialSession = data.session ?? null;
+        setSession(initialSession);
+        await loadProfile(initialSession);
+      } catch (e) {
+        console.error("AuthProvider init failed:", e);
+      } finally {
+        setLoading(false);
+      }
     };
 
     init();

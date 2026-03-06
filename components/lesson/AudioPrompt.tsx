@@ -1,5 +1,6 @@
-import { Question } from "@/constants/CourseData";
+import { Question } from "@/constants/ContentTypes";
 import { Colors } from "@/constants/theme";
+import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import React from "react";
@@ -21,9 +22,9 @@ export default function AudioPrompt({
   onPlay,
   onStartRecord,
   onStopRecord,
-  onRevealMandarin,
+  onRevealNativeScript,
   currentQuestion,
-  showMandarin,
+  showNativeScript,
   selectedOption,
   scaleAnim,
   instructionOpacity,
@@ -37,9 +38,9 @@ export default function AudioPrompt({
   onPlay: () => void;
   onStartRecord: () => void;
   onStopRecord: () => void;
-  onRevealMandarin: () => void;
+  onRevealNativeScript: () => void;
   currentQuestion: Question;
-  showMandarin: boolean;
+  showNativeScript: boolean;
   selectedOption: number | null;
   scaleAnim: Animated.Value;
   instructionOpacity: Animated.Value;
@@ -47,11 +48,22 @@ export default function AudioPrompt({
   listeningScale: Animated.Value;
   fadeAnim: Animated.Value;
 }) {
+  const { hasRomanization, getNativeScriptLabel } = useLanguage();
+
   const playbackDisabled = !selectedOption && (isPlaying || hasListenedToAudio);
   return (
     <>
       <Pressable
         disabled={playbackDisabled}
+        accessibilityRole="button"
+        accessibilityLabel={
+          selectedOption
+            ? isRecognizing
+              ? "Stop recording"
+              : "Start recording your answer"
+            : "Play audio prompt"
+        }
+        accessibilityState={{ disabled: playbackDisabled }}
         onPress={
           selectedOption
             ? isRecognizing
@@ -164,16 +176,18 @@ export default function AudioPrompt({
               </ThemedText>
             </Animated.View>
           </View>
-        ) : showMandarin ? (
-          <TouchableOpacity onPress={onRevealMandarin}>
-            <Animated.View style={[styles.mandarinText, { opacity: fadeAnim }]}>
-              <ThemedText style={styles.pinyin}>
-                {currentQuestion.mandarin.pinyin}
-              </ThemedText>
+        ) : showNativeScript ? (
+          <TouchableOpacity onPress={onRevealNativeScript}>
+            <Animated.View style={[styles.nativeScriptText, { opacity: fadeAnim }]}>
+              {hasRomanization() && currentQuestion.prompt.romanization && (
+                <ThemedText style={styles.romanization}>
+                  {currentQuestion.prompt.romanization}
+                </ThemedText>
+              )}
               <ThemedText
-                style={[styles.hanzi, { color: Colors.subduedTextColor }]}
+                style={[styles.nativeScript, { color: Colors.subduedTextColor }]}
               >
-                {currentQuestion.mandarin.hanzi}
+                {currentQuestion.prompt.nativeScript}
               </ThemedText>
             </Animated.View>
           </TouchableOpacity>
@@ -181,8 +195,11 @@ export default function AudioPrompt({
           currentQuestion.type !== "listening_mc" && (
             <TouchableOpacity
               style={styles.revealButton}
-              onPress={onRevealMandarin}
+              onPress={onRevealNativeScript}
               hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }}
+              accessibilityRole="button"
+              accessibilityLabel="Reveal what was said"
+              accessibilityHint="Tap to show the phrase in the target language"
             >
               <ThemedText style={styles.instructionText}>
                 Tap here to reveal what was said
@@ -213,17 +230,17 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  mandarinText: {
+  nativeScriptText: {
     alignItems: "center",
     padding: 16,
     borderRadius: 12,
   },
-  pinyin: {
+  romanization: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 8,
   },
-  hanzi: {
+  nativeScript: {
     fontSize: 18,
   },
   revealButton: {
