@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useAuth } from "@/ctx/AuthContext";
 import { supabase } from "@/utils/supabase";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -96,6 +96,7 @@ export function Paywall({
   visible: boolean;
   onClose: () => void;
 }) {
+  const { colors } = useTheme();
   const [billingCycle, setBillingCycle] = useState<"annual" | "monthly">(
     "annual",
   );
@@ -134,7 +135,7 @@ export function Paywall({
     >
       <SafeAreaView style={styles.container} edges={["top"]}>
         <LinearGradient
-          colors={[Colors.primaryAccentColor, "#ff6b35", "#1a1a2e"]}
+          colors={[colors.primary, "#ff6b35", "#1a1a2e"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.gradient}
@@ -173,7 +174,7 @@ export function Paywall({
                   <Ionicons
                     name={feature.icon}
                     size={24}
-                    color={Colors.primaryAccentColor}
+                    color={colors.primary}
                   />
                 </View>
                 <Text style={styles.featureTitle}>{feature.title}</Text>
@@ -202,8 +203,8 @@ export function Paywall({
                 Annual
               </Text>
               {billingCycle === "annual" && (
-                <View style={styles.savingsBadge}>
-                  <View style={styles.savingsBadge}>
+                <View style={[styles.savingsBadge, { backgroundColor: colors.success }]}>
+                  <View style={[styles.savingsBadge, { backgroundColor: colors.success }]}>
                     <Text style={styles.savingsText}>
                       {plans.annual.savings}
                     </Text>
@@ -230,29 +231,29 @@ export function Paywall({
           </View>
 
           {/* Plans */}
-          <View style={styles.planCard}>
+          <View style={[styles.planCard, { backgroundColor: colors.card, shadowColor: colors.shadow, borderColor: colors.primary }]}>
             {selectedPlan.recommended && (
-              <View style={styles.recommendedBadge}>
+              <View style={[styles.recommendedBadge, { backgroundColor: colors.primary, shadowColor: colors.shadow }]}>
                 <Text style={styles.recommendedText}>BEST VALUE</Text>
               </View>
             )}
             <View style={styles.planHeader}>
               <View>
-                <Text style={styles.planName}>{selectedPlan.name}</Text>
-                <Text style={styles.planBilling}>
+                <Text style={[styles.planName, { color: colors.text }]}>{selectedPlan.name}</Text>
+                <Text style={[styles.planBilling, { color: colors.textSecondary }]}>
                   {selectedPlan.billingCycle}
                 </Text>
               </View>
               <View style={styles.planPriceContainer}>
-                <Text style={styles.planPrice}>{selectedPlan.price}</Text>
-                <Text style={styles.planPeriod}>{selectedPlan.period}</Text>
+                <Text style={[styles.planPrice, { color: colors.text }]}>{selectedPlan.price}</Text>
+                <Text style={[styles.planPeriod, { color: colors.textSecondary }]}>{selectedPlan.period}</Text>
               </View>
             </View>
-            <View style={styles.planFeatures}>
+            <View style={[styles.planFeatures, { borderTopColor: colors.border }]}>
               {selectedPlan.features.map((feature, index) => (
                 <View key={index} style={styles.planFeatureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-                  <Text style={styles.planFeatureText}>{feature}</Text>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+                  <Text style={[styles.planFeatureText, { color: colors.textSecondary }]}>{feature}</Text>
                 </View>
               ))}
             </View>
@@ -260,7 +261,7 @@ export function Paywall({
 
           {/* CTA button */}
           <Pressable
-            style={[styles.ctaButton, isStartingTrial && { opacity: 0.7 }]}
+            style={[styles.ctaButton, { backgroundColor: colors.primary, shadowColor: colors.primary }, isStartingTrial && { opacity: 0.7 }]}
             onPress={handleStartTrial}
             disabled={isStartingTrial}
           >
@@ -464,7 +465,6 @@ const styles = StyleSheet.create({
     color: "#1a1a2e",
   },
   savingsBadge: {
-    backgroundColor: "#34C759",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -475,27 +475,22 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   planCard: {
-    backgroundColor: "#fff",
     borderRadius: 24,
     padding: 24,
     marginBottom: 20,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
     borderWidth: 2,
-    borderColor: Colors.primaryAccentColor,
   },
   recommendedBadge: {
     position: "absolute",
     top: -12,
     alignSelf: "center",
-    backgroundColor: Colors.primaryAccentColor,
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -516,11 +511,9 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#1a1a2e",
   },
   planBilling: {
     fontSize: 14,
-    color: Colors.subduedTextColor,
     marginTop: 4,
   },
   planPriceContainer: {
@@ -529,15 +522,12 @@ const styles = StyleSheet.create({
   planPrice: {
     fontSize: 32,
     fontWeight: "800",
-    color: "#1a1a2e",
   },
   planPeriod: {
     fontSize: 14,
-    color: Colors.subduedTextColor,
   },
   planFeatures: {
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
     paddingTop: 16,
     gap: 12,
   },
@@ -548,19 +538,16 @@ const styles = StyleSheet.create({
   },
   planFeatureText: {
     fontSize: 14,
-    color: "#4b5563",
     fontWeight: "500",
   },
   ctaButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.primaryAccentColor,
     borderRadius: 24,
     paddingVertical: 18,
     paddingHorizontal: 32,
     marginBottom: 12,
-    shadowColor: Colors.primaryAccentColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,

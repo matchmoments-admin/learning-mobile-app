@@ -1,9 +1,9 @@
 import { SpeakingOption } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 
 export function FeedbackView({
   correctOption,
@@ -25,6 +25,7 @@ export function FeedbackView({
     said: string;
   };
 }) {
+  const { colors } = useTheme();
   const { hasRomanization } = useLanguage();
   const showRetryButton = onRetry && !isCorrect && attemptCount < maxAttempts;
   const showCorrectAnswer = !isCorrect && attemptCount >= maxAttempts;
@@ -34,8 +35,9 @@ export function FeedbackView({
       style={[
         styles.container,
         {
-          backgroundColor: isCorrect ? "#e8f5e9" : "#ffebee",
-          borderColor: isCorrect ? "#34C759" : "#ef4444",
+          backgroundColor: isCorrect ? colors.successLight : colors.errorLight,
+          borderColor: isCorrect ? colors.success : colors.error,
+          shadowColor: colors.shadow,
         },
       ]}
     >
@@ -43,89 +45,89 @@ export function FeedbackView({
         <Ionicons
           name={isCorrect ? "checkmark-circle" : "close-circle"}
           size={40}
-          color={isCorrect ? "#34C759" : "#ef4444"}
+          color={isCorrect ? colors.success : colors.error}
         />
         <View style={styles.headerText}>
-          <ThemedText style={styles.title}>
+          <Text style={styles.title}>
             {isCorrect
               ? "Great job!"
               : showRetryButton
                 ? "Not quite"
                 : "Keep practising"}
-          </ThemedText>
+          </Text>
           {!isCorrect && showRetryButton && (
-            <ThemedText
-              style={[styles.subtitle, { color: Colors.subduedTextColor }]}
+            <Text
+              style={[styles.subtitle, { color: colors.textSecondary }]}
             >
               Try again - you've got this!
-            </ThemedText>
+            </Text>
           )}
           {showCorrectAnswer && (
-            <ThemedText
-              style={[styles.subtitle, { color: Colors.subduedTextColor }]}
+            <Text
+              style={[styles.subtitle, { color: colors.textSecondary }]}
             >
               Here's what to say next time
-            </ThemedText>
+            </Text>
           )}
         </View>
       </View>
       {/* Transcription feedback */}
       {transcription && (
-        <View style={styles.transcriptionContainer}>
+        <View style={[styles.transcriptionContainer, { backgroundColor: colors.backgroundSecondary }]}>
           <View style={styles.transcriptionRow}>
-            <ThemedText style={styles.transcriptionLabel}>Expected:</ThemedText>
-            <ThemedText style={styles.transcriptionText}>
+            <Text style={[styles.transcriptionLabel, { color: colors.textSecondary }]}>Expected:</Text>
+            <Text style={styles.transcriptionText}>
               {transcription.expected}
-            </ThemedText>
+            </Text>
           </View>
           <View style={styles.transcriptionRow}>
-            <ThemedText style={styles.transcriptionLabel}>You said:</ThemedText>
-            <ThemedText
+            <Text style={[styles.transcriptionLabel, { color: colors.textSecondary }]}>You said:</Text>
+            <Text
               style={[
                 styles.transcriptionText,
                 {
-                  color: isCorrect ? "#34C759" : "#ef4444",
+                  color: isCorrect ? colors.success : colors.error,
                 },
               ]}
             >
               {transcription.said.charAt(0).toUpperCase() +
                 transcription.said.slice(1)}
-            </ThemedText>
+            </Text>
           </View>
         </View>
       )}
 
       {/* Show correct answer after max attempts */}
       {showCorrectAnswer && (
-        <View style={styles.correctAnswerSection}>
+        <View style={[styles.correctAnswerSection, { backgroundColor: colors.primaryLight, borderColor: colors.primary + "4D" }]}>
           <View style={styles.correctAnswerHeader}>
             <Ionicons
               name="bulb-outline"
               size={20}
-              color={Colors.primaryAccentColor}
+              color={colors.primary}
             />
-            <ThemedText style={styles.correctAnswerLabel}>
+            <Text style={[styles.correctAnswerLabel, { color: colors.primary }]}>
               Correct Response:
-            </ThemedText>
+            </Text>
           </View>
           <View style={styles.correctAnswerContent}>
-            <ThemedText style={styles.correctAnswerTranslation}>
+            <Text style={styles.correctAnswerTranslation}>
               {correctOption.translation}
-            </ThemedText>
+            </Text>
             <View style={styles.correctAnswerPhrase}>
               {hasRomanization() && correctOption.phrase.romanization && (
-                <ThemedText style={styles.correctAnswerRomanization}>
+                <Text style={styles.correctAnswerRomanization}>
                   {correctOption.phrase.romanization}
-                </ThemedText>
+                </Text>
               )}
-              <ThemedText
+              <Text
                 style={[
                   styles.correctAnswerNativeScript,
-                  { color: Colors.subduedTextColor },
+                  { color: colors.textSecondary },
                 ]}
               >
                 {correctOption.phrase.nativeScript}
-              </ThemedText>
+              </Text>
             </View>
           </View>
         </View>
@@ -136,41 +138,41 @@ export function FeedbackView({
         {showRetryButton ? (
           <>
             <TouchableOpacity
-              style={[styles.button, styles.retryButton]}
+              style={[styles.button, styles.retryButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
               onPress={onRetry}
             >
-              <Ionicons name="refresh" size={20} color="#fff" />
-              <ThemedText style={styles.retryButtonText}>
+              <Ionicons name="refresh" size={20} color={colors.textInverse} />
+              <Text style={[styles.retryButtonText, { color: colors.textInverse }]}>
                 Try Again ({maxAttempts - attemptCount} left)
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.button,
                 styles.skipButton,
-                { borderColor: Colors.subduedTextColor },
+                { borderColor: colors.textSecondary },
               ]}
               onPress={onContinue}
             >
-              <ThemedText
+              <Text
                 style={[
                   styles.skipButtonText,
-                  { color: Colors.subduedTextColor },
+                  { color: colors.textSecondary },
                 ]}
               >
                 Skip
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
           </>
         ) : (
           <TouchableOpacity
-            style={[styles.button, styles.continueButton]}
+            style={[styles.button, styles.continueButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
             onPress={onContinue}
           >
-            <ThemedText style={[styles.continueButtonText]}>
+            <Text style={[styles.continueButtonText, { color: colors.textInverse }]}>
               {isCorrect ? "Continue" : "Next Question"}
-            </ThemedText>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
+            </Text>
+            <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
           </TouchableOpacity>
         )}
       </View>
@@ -186,7 +188,7 @@ export function FeedbackView({
                   styles.attemptDot,
                   {
                     backgroundColor:
-                      i < attemptCount ? "#ef4444" : "rgba(107, 114, 128, 0.3)",
+                      i < attemptCount ? colors.error : colors.textTertiary + "4D",
                   },
                 ]}
               ></View>
@@ -203,7 +205,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 2,
     padding: 24,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -228,12 +229,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   correctAnswerSection: {
-    backgroundColor: "rgba(255, 73, 0, 0.1)",
     borderRadius: 16,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "rgba(255, 73, 0, 0.3)",
   },
   correctAnswerHeader: {
     flexDirection: "row",
@@ -245,7 +244,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     textTransform: "uppercase",
-    color: Colors.primaryAccentColor,
   },
   correctAnswerContent: {
     gap: 8,
@@ -278,15 +276,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   retryButton: {
-    backgroundColor: Colors.primaryAccentColor,
-    shadowColor: Colors.primaryAccentColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
   retryButtonText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
@@ -299,15 +294,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   continueButton: {
-    backgroundColor: Colors.primaryAccentColor,
-    shadowColor: Colors.primaryAccentColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
   continueButtonText: {
-    color: "#fff",
     fontSize: 16,
     fontWeight: "700",
   },
@@ -326,7 +318,6 @@ const styles = StyleSheet.create({
   },
   transcriptionContainer: {
     padding: 12,
-    backgroundColor: "rgba(0,0,0,0.03)",
     borderRadius: 8,
     marginBottom: 12,
   },
@@ -336,7 +327,6 @@ const styles = StyleSheet.create({
   transcriptionLabel: {
     width: 80,
     fontSize: 14,
-    color: Colors.subduedTextColor,
     fontWeight: "600",
   },
   transcriptionText: {

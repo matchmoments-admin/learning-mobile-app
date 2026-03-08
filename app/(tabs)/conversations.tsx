@@ -1,7 +1,7 @@
 import { Paywall } from "@/components/subscription/Paywall";
-import { ThemedText } from "@/components/themed-text";
+import { Text } from "@/design-system/components/Text";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { ConversationScenario } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
 import { useAuth } from "@/ctx/AuthContext";
 import { useLanguage } from "@/ctx/LanguageContext";
 import {
@@ -28,6 +28,7 @@ import { toast } from "sonner-native";
 export default function ConversationsScreen() {
   const { isPremium } = useAuth();
   const { activePack, activeLanguage, hasRomanization } = useLanguage();
+  const { colors } = useTheme();
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [isPhrasebookOpen, setIsPhrasebookOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] =
@@ -159,14 +160,14 @@ export default function ConversationsScreen() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: "#fff" }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       edges={["top", "left", "right"]}
     >
       <View style={{ flex: 1 }}>
         <View
-          style={[styles.header, { borderBottomColor: Colors.borderColor }]}
+          style={[styles.header, { borderBottomColor: colors.border }]}
         >
-          <ThemedText style={styles.headerTitle}>Topics</ThemedText>
+          <Text style={styles.headerTitle}>Topics</Text>
         </View>
 
         <ScrollView
@@ -177,7 +178,7 @@ export default function ConversationsScreen() {
             <TouchableOpacity
               style={[
                 styles.premiumBanner,
-                { backgroundColor: Colors.primaryAccentColor },
+                { backgroundColor: colors.primary, shadowColor: colors.shadow },
               ]}
               onPress={() => setPaywallVisible(true)}
             >
@@ -185,46 +186,46 @@ export default function ConversationsScreen() {
                 <Ionicons
                   name="chatbox"
                   size={24}
-                  color="#fff"
+                  color={colors.textInverse}
                   style={{ marginBottom: 8 }}
                 />
-                <ThemedText style={styles.premiumTitle}>
+                <Text style={[styles.premiumTitle, { color: colors.textInverse }]}>
                   Get full access to Lumora
-                </ThemedText>
-                <ThemedText style={styles.premiumSubtitle}>
+                </Text>
+                <Text style={[styles.premiumSubtitle, { color: colors.textInverse, opacity: 0.8 }]}>
                   Unlock Lumora Premium to get access to custom scenarios and
                   more
-                </ThemedText>
-                <View style={styles.premiumButton}>
-                  <ThemedText
+                </Text>
+                <View style={[styles.premiumButton, { backgroundColor: colors.background }]}>
+                  <Text
                     style={[
                       styles.premiumButtonText,
-                      { color: Colors.primaryAccentColor },
+                      { color: colors.primary },
                     ]}
                   >
                     Start free trial
-                  </ThemedText>
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
-            style={[styles.freeTalkCard, { borderColor: Colors.borderColor }]}
+            style={[styles.freeTalkCard, { borderColor: colors.border }]}
             onPress={handleCreateCustom}
           >
             <View style={styles.freeTalkContent}>
-              <ThemedText type="defaultSemiBold" style={{ fontSize: 18 }}>
+              <Text type="defaultSemiBold" style={{ fontSize: 18 }}>
                 Free Talk
-              </ThemedText>
-              <ThemedText
-                style={{ color: Colors.subduedTextColor, marginTop: 4 }}
+              </Text>
+              <Text
+                style={{ color: colors.textSecondary, marginTop: 4 }}
               >
                 Describe a scenario of your choice to create you custom Roleplay
                 experience.
-              </ThemedText>
+              </Text>
             </View>
-            <View style={styles.crystalBallContainer}>
+            <View style={[styles.crystalBallContainer, { backgroundColor: colors.primaryLight }]}>
               <Ionicons name="color-wand" size={32} color="#A855F7" />
             </View>
           </TouchableOpacity>
@@ -236,7 +237,7 @@ export default function ConversationsScreen() {
                 key={scenario.id}
                 style={[
                   styles.scenarioCard,
-                  { borderColor: Colors.borderColor },
+                  { borderColor: colors.border },
                 ]}
                 onPress={() => handleScenarioPress(scenario)}
               >
@@ -244,27 +245,27 @@ export default function ConversationsScreen() {
                   <View
                     style={[
                       styles.freeBadge,
-                      { backgroundColor: Colors.light.text + "22" },
+                      { backgroundColor: colors.text + "22" },
                     ]}
                   >
-                    <ThemedText
+                    <Text
                       style={[
                         styles.freeBadgeText,
-                        { color: Colors.subduedTextColor },
+                        { color: colors.textSecondary },
                       ]}
                     >
                       CUSTOM
-                    </ThemedText>
+                    </Text>
                   </View>
                 )}
                 {scenario.isFree && (
                   <View
                     style={[
                       styles.freeBadge,
-                      { backgroundColor: Colors.primaryAccentColor },
+                      { backgroundColor: colors.primary },
                     ]}
                   >
-                    <ThemedText style={[styles.freeBadgeText]}>FREE</ThemedText>
+                    <Text style={[styles.freeBadgeText, { color: colors.textInverse }]}>FREE</Text>
                   </View>
                 )}
                 {!scenario.isFree && !isPremium && (
@@ -272,21 +273,21 @@ export default function ConversationsScreen() {
                     <Ionicons
                       name="lock-closed"
                       size={24}
-                      color={Colors.subduedTextColor}
+                      color={colors.textSecondary}
                     />
                   </View>
                 )}
-                <ThemedText type="defaultSemiBold" style={styles.scenarioTitle}>
+                <Text type="defaultSemiBold" style={styles.scenarioTitle}>
                   {scenario.title}
-                </ThemedText>
+                </Text>
                 <View style={styles.scenarioIconContainer}>
                   <Ionicons
                     name={scenario.icon}
                     size={40}
                     color={
                       scenario.isFree || isPremium
-                        ? Colors.primaryAccentColor
-                        : Colors.subduedTextColor
+                        ? colors.primary
+                        : colors.textSecondary
                     }
                   />
                 </View>
@@ -323,12 +324,12 @@ export default function ConversationsScreen() {
                 <Ionicons
                   name="chevron-back"
                   size={24}
-                  color={Colors.light.text}
+                  color={colors.text}
                 />
               </TouchableOpacity>
-              <ThemedText type="defaultSemiBold">
+              <Text type="defaultSemiBold">
                 {isPhrasebookOpen ? "Phrasebook" : ""}
-              </ThemedText>
+              </Text>
               <View style={{ width: 40 }}></View>
             </View>
             <ScrollView
@@ -342,21 +343,21 @@ export default function ConversationsScreen() {
                     style={[
                       styles.phraseRow,
                       {
-                        borderColor: Colors.borderColor,
+                        borderColor: colors.border,
                       },
                     ]}
                   >
-                    <ThemedText style={styles.phraseNativeScript}>
+                    <Text style={styles.phraseNativeScript}>
                       {p.nativeScript}
-                    </ThemedText>
+                    </Text>
                     {hasRomanization() && p.romanization && (
-                      <ThemedText style={{ color: Colors.subduedTextColor }}>
+                      <Text style={{ color: colors.textSecondary }}>
                         {p.romanization}
-                      </ThemedText>
+                      </Text>
                     )}
-                    <ThemedText style={{ color: Colors.subduedTextColor }}>
+                    <Text style={{ color: colors.textSecondary }}>
                       {p.translation}
-                    </ThemedText>
+                    </Text>
                   </View>
                 ))
               ) : (
@@ -365,107 +366,107 @@ export default function ConversationsScreen() {
                     <Ionicons
                       name={selectedScenario?.icon}
                       size={64}
-                      color={Colors.primaryAccentColor}
+                      color={colors.primary}
                     />
                   </View>
 
-                  <ThemedText type={"title"} style={styles.modalTitle}>
+                  <Text type={"title"} style={styles.modalTitle}>
                     {selectedScenario?.title}
-                  </ThemedText>
+                  </Text>
 
                   <View style={styles.section}>
-                    <ThemedText
+                    <Text
                       type="defaultSemiBold"
                       style={styles.sectionHeader}
                     >
                       Scenario
-                    </ThemedText>
-                    <ThemedText style={{ color: Colors.subduedTextColor }}>
+                    </Text>
+                    <Text style={{ color: colors.textSecondary }}>
                       {selectedScenario?.description}
-                    </ThemedText>
+                    </Text>
                   </View>
 
-                  <View style={styles.guidelinesCard}>
-                    <ThemedText
+                  <View style={[styles.guidelinesCard, { backgroundColor: colors.warningLight }]}>
+                    <Text
                       type="defaultSemiBold"
                       style={{ marginBottom: 8 }}
                     >
                       Free Talk Guidelines
-                    </ThemedText>
+                    </Text>
                     <View style={styles.guidelineItem}>
                       <Ionicons
                         name="warning-outline"
                         size={16}
-                        color="#F59E0B"
+                        color={colors.warning}
                       />
-                      <ThemedText style={styles.guidelineText}>
+                      <Text style={[styles.guidelineText, { color: colors.warning }]}>
                         No inappropriate conversations
-                      </ThemedText>
+                      </Text>
                     </View>
                     <View style={styles.guidelineItem}>
                       <Ionicons
                         name="alert-circle-outline"
                         size={16}
-                        color="#F59E0B"
+                        color={colors.warning}
                       />
-                      <ThemedText style={styles.guidelineText}>
+                      <Text style={[styles.guidelineText, { color: colors.warning }]}>
                         Not intended for advice
-                      </ThemedText>
+                      </Text>
                     </View>
                     <View style={styles.guidelineItem}>
                       <Ionicons
                         name="lock-closed-outline"
                         size={16}
-                        color="#F59E0B"
+                        color={colors.warning}
                       />
-                      <ThemedText style={styles.guidelineText}>
+                      <Text style={[styles.guidelineText, { color: colors.warning }]}>
                         Don't share sensitive information
-                      </ThemedText>
+                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.section}>
-                    <ThemedText
+                    <Text
                       type="defaultSemiBold"
                       style={styles.sectionHeader}
                     >
                       Goal
-                    </ThemedText>
+                    </Text>
                     <View
                       style={[
                         styles.goalCard,
-                        { borderColor: Colors.borderColor },
+                        { borderColor: colors.border },
                       ]}
                     >
-                      <ThemedText type="defaultSemiBold">
+                      <Text type="defaultSemiBold">
                         {selectedScenario?.goal}
-                      </ThemedText>
+                      </Text>
                     </View>
                   </View>
 
                   <View style={styles.section}>
-                    <ThemedText
+                    <Text
                       type="defaultSemiBold"
                       style={styles.sectionHeader}
                     >
                       Tasks
-                    </ThemedText>
+                    </Text>
                     {selectedScenario?.tasks.map((task, index) => (
                       <View
                         key={index}
                         style={[
                           styles.taskCard,
                           {
-                            borderColor: Colors.borderColor,
+                            borderColor: colors.border,
                           },
                         ]}
                       >
                         <Ionicons
                           size={20}
-                          color={Colors.subduedTextColor}
+                          color={colors.textSecondary}
                           name="checkmark-circle-outline"
                         />
-                        <ThemedText>{task}</ThemedText>
+                        <Text>{task}</Text>
                       </View>
                     ))}
                   </View>
@@ -473,7 +474,7 @@ export default function ConversationsScreen() {
                   <TouchableOpacity
                     style={[
                       styles.phrasebookButton,
-                      { backgroundColor: Colors.light.text + "10" },
+                      { backgroundColor: colors.text + "10" },
                     ]}
                     onPress={() => {
                       const entries = selectedScenario?.phrasebook ?? [];
@@ -490,16 +491,16 @@ export default function ConversationsScreen() {
                     <Ionicons
                       name="book-outline"
                       size={20}
-                      color={Colors.primaryAccentColor}
+                      color={colors.primary}
                     />
-                    <ThemedText
+                    <Text
                       style={{
-                        color: Colors.primaryAccentColor,
+                        color: colors.primary,
                         fontWeight: "600",
                       }}
                     >
                       View Phrasebook
-                    </ThemedText>
+                    </Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -507,16 +508,16 @@ export default function ConversationsScreen() {
 
             {!isPhrasebookOpen && (
               <View
-                style={[styles.footer, { borderTopColor: Colors.borderColor }]}
+                style={[styles.footer, { borderTopColor: colors.border }]}
               >
                 <TouchableOpacity
                   style={[
                     styles.startButton,
-                    { backgroundColor: Colors.primaryAccentColor },
+                    { backgroundColor: colors.primary },
                   ]}
                   onPress={handleStartConversation}
                 >
-                  <ThemedText style={styles.startButtonText}>Start</ThemedText>
+                  <Text style={[styles.startButtonText, { color: colors.textInverse }]}>Start</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -558,10 +559,10 @@ export default function ConversationsScreen() {
                   <Ionicons
                     name="chevron-back"
                     size={24}
-                    color={Colors.light.text}
+                    color={colors.text}
                   />
                 </TouchableOpacity>
-                <ThemedText type="defaultSemiBold">Create</ThemedText>
+                <Text type="defaultSemiBold">Create</Text>
                 <View style={{ width: 40 }}></View>
               </View>
 
@@ -569,29 +570,29 @@ export default function ConversationsScreen() {
                 contentContainerStyle={styles.modalContent}
                 keyboardShouldPersistTaps="handled"
               >
-                <ThemedText
-                  style={{ color: Colors.subduedTextColor, marginBottom: 20 }}
+                <Text
+                  style={{ color: colors.textSecondary, marginBottom: 20 }}
                 >
                   Fill out each role and describe in detail the scene and the
                   conversation you want to have.
-                </ThemedText>
+                </Text>
 
                 <View style={styles.inputGroup}>
                   <View
                     style={[
                       styles.inputContainer,
-                      { borderColor: Colors.borderColor },
+                      { borderColor: colors.border },
                     ]}
                   >
                     <Ionicons
                       name="person-outline"
                       size={20}
-                      color={Colors.subduedTextColor}
+                      color={colors.textSecondary}
                     />
                     <TextInput
-                      style={[styles.input, { color: Colors.light.text }]}
+                      style={[styles.input, { color: colors.text }]}
                       placeholder="My role"
-                      placeholderTextColor={Colors.subduedTextColor}
+                      placeholderTextColor={colors.textSecondary}
                       value={customMyRole}
                       onChangeText={setCustomMyRole}
                     />
@@ -599,18 +600,18 @@ export default function ConversationsScreen() {
                   <View
                     style={[
                       styles.inputContainer,
-                      { borderColor: Colors.borderColor },
+                      { borderColor: colors.border },
                     ]}
                   >
                     <Ionicons
                       name="happy-outline"
                       size={20}
-                      color={Colors.subduedTextColor}
+                      color={colors.textSecondary}
                     />
                     <TextInput
-                      style={[styles.input, { color: Colors.light.text }]}
+                      style={[styles.input, { color: colors.text }]}
                       placeholder="AI's role"
-                      placeholderTextColor={Colors.subduedTextColor}
+                      placeholderTextColor={colors.textSecondary}
                       value={customAiRole}
                       onChangeText={setCustomAiRole}
                     />
@@ -620,7 +621,7 @@ export default function ConversationsScreen() {
                     style={[
                       styles.inputContainer,
                       {
-                        borderColor: Colors.borderColor,
+                        borderColor: colors.border,
                         height: 120,
                         alignItems: "flex-start",
                         paddingTop: 16,
@@ -630,20 +631,20 @@ export default function ConversationsScreen() {
                     <Ionicons
                       name="image-outline"
                       size={20}
-                      color={Colors.subduedTextColor}
+                      color={colors.textSecondary}
                       style={{ marginTop: 5 }}
                     />
                     <TextInput
                       style={[
                         styles.input,
                         {
-                          color: Colors.light.text,
+                          color: colors.text,
                           height: "100%",
                           textAlignVertical: "top",
                         },
                       ]}
                       placeholder="Set the scene and the chat topic here"
-                      placeholderTextColor={Colors.subduedTextColor}
+                      placeholderTextColor={colors.textSecondary}
                       value={customScene}
                       multiline
                       onChangeText={setCustomScene}
@@ -653,22 +654,22 @@ export default function ConversationsScreen() {
               </ScrollView>
 
               <View
-                style={[styles.footer, { borderTopColor: Colors.borderColor }]}
+                style={[styles.footer, { borderTopColor: colors.border }]}
               >
                 <TouchableOpacity
                   style={[
                     styles.startButton,
                     {
-                      backgroundColor: Colors.primaryAccentColor,
+                      backgroundColor: colors.primary,
                       opacity: customScene && !isGeneratingScenario ? 1 : 0.5,
                     },
                   ]}
                   disabled={!customScene || isGeneratingScenario}
                   onPress={handleStartCustomConversation}
                 >
-                  <ThemedText style={styles.startButtonText}>
+                  <Text style={[styles.startButtonText, { color: colors.textInverse }]}>
                     {isGeneratingScenario ? "Generating..." : "Start chatting"}
-                  </ThemedText>
+                  </Text>
                 </TouchableOpacity>
               </View>
             </KeyboardAvoidingView>
@@ -700,11 +701,9 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   premiumBanner: {
-    backgroundColor: "#2563EB",
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
-    shadowColor: "#2563EB",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -714,25 +713,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   premiumTitle: {
-    color: "white",
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 4,
   },
   premiumSubtitle: {
-    color: "rgba(255,255,255,0.8)",
     fontSize: 14,
     textAlign: "center",
     marginBottom: 16,
   },
   premiumButton: {
-    backgroundColor: "white",
     paddingVertical: 10,
     paddingHorizontal: 24,
     borderRadius: 24,
   },
   premiumButtonText: {
-    color: "#2563EB",
     fontWeight: "bold",
   },
   freeTalkCard: {
@@ -752,7 +747,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#F3E8FF",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -771,7 +765,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   freeBadge: {
-    backgroundColor: "#2563EB",
     alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -779,7 +772,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   freeBadgeText: {
-    color: "white",
     fontSize: 10,
     fontWeight: "bold",
   },
@@ -823,7 +815,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   guidelinesCard: {
-    backgroundColor: "#FFFBEB",
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
@@ -836,7 +827,6 @@ const styles = StyleSheet.create({
   },
   guidelineText: {
     fontSize: 13,
-    color: "#92400E",
     flex: 1,
   },
   goalCard: {
@@ -883,7 +873,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   startButtonText: {
-    color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },

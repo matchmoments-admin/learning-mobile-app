@@ -1,9 +1,9 @@
 import { Question, Term } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import Flashcard from "./Flashcard";
 import ProgressHeader from "./ProgressHeader";
@@ -34,10 +34,24 @@ interface StudyState {
 const getUniqueWords = (questions: Question[]): Term[] => {
   const allWords = new Map<string, Term>();
   questions.forEach((question) => {
-    const wordSource =
-      question.type === "listening_mc"
-        ? question.prompt.words
-        : question.options.flatMap((opt) => opt.phrase.words);
+    let wordSource: Term[] = [];
+    if (question.type === "listening_mc") {
+      wordSource = question.prompt.words;
+    } else if (question.type === "fill_in_blank") {
+      // No word-level breakdown for fill-in-blank
+      wordSource = [{
+        nativeScript: question.sentence.nativeScript,
+        romanization: question.sentence.romanization,
+        translation: question.sentence.translation,
+      }];
+    } else if (question.type === "matching") {
+      wordSource = question.pairs.map((p) => ({
+        nativeScript: p.left,
+        translation: p.right,
+      }));
+    } else {
+      wordSource = question.options.flatMap((opt) => opt.phrase.words);
+    }
 
     wordSource.forEach((word) => {
       if (word && word.nativeScript && !allWords.has(word.nativeScript)) {
@@ -92,6 +106,7 @@ export default function VocabularyIntroScreen({
   questions: Question[];
   onStartLesson: () => void;
 }) {
+  const { colors } = useTheme();
   const vocabulary = useMemo(() => getUniqueWords(questions), [questions]);
   const deck = useMemo(() => buildDeck(vocabulary), [vocabulary]);
   const [state, setState] = useState<StudyState>(() =>
@@ -198,12 +213,12 @@ export default function VocabularyIntroScreen({
 
       <View style={styles.content}>
         <View style={styles.instructionContainer}>
-          <ThemedText style={styles.instructionTitle}>
+          <Text style={styles.instructionTitle}>
             Lesson Vocabulary
-          </ThemedText>
-          <ThemedText style={styles.instructionText}>
+          </Text>
+          <Text style={[styles.instructionText, { color: colors.textSecondary }]}>
             Tap to flip. Retry cards you still need to review.
-          </ThemedText>
+          </Text>
         </View>
 
         {currentCard ? (
@@ -223,26 +238,26 @@ export default function VocabularyIntroScreen({
               disabled={!currentCard}
               style={({ pressed }) => [
                 styles.gradeButton,
-                styles.againButton,
+                { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
                 !currentCard ? styles.disabledButton : null,
                 pressed && !!currentCard ? styles.pressedButton : null,
               ]}
             >
-              <ThemedText style={styles.gradeButtonText}>Again</ThemedText>
+              <Text style={[styles.gradeButtonText, { color: colors.text }]}>Again</Text>
             </Pressable>
             <Pressable
               onPress={() => handleGrade("good")}
               disabled={!currentCard}
               style={({ pressed }) => [
                 styles.gradeButton,
-                styles.gotItButton,
+                { backgroundColor: colors.primary, borderColor: colors.primary },
                 !currentCard ? styles.disabledButton : null,
                 pressed && !!currentCard ? styles.pressedButton : null,
               ]}
             >
-              <ThemedText style={styles.gradeButtonTextWhite}>
+              <Text style={[styles.gradeButtonTextWhite, { color: colors.textInverse }]}>
                 Got it
-              </ThemedText>
+              </Text>
             </Pressable>
           </View>
 
@@ -253,9 +268,9 @@ export default function VocabularyIntroScreen({
               pressed && styles.skipButtonPressed,
             ]}
           >
-            <ThemedText style={styles.skipButtonText}>
+            <Text style={[styles.skipButtonText, { color: colors.textSecondary }]}>
               Skip to Lesson
-            </ThemedText>
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -284,7 +299,6 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: 15,
-    color: Colors.subduedTextColor,
     textAlign: "center",
     lineHeight: 22,
   },
@@ -313,14 +327,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
   },
-  againButton: {
-    backgroundColor: "#f3f4f6",
-    borderColor: "#d1d5db",
-  },
-  gotItButton: {
-    backgroundColor: Colors.primaryAccentColor,
-    borderColor: Colors.primaryAccentColor,
-  },
   disabledButton: {
     opacity: 0.4,
   },
@@ -331,12 +337,10 @@ const styles = StyleSheet.create({
   gradeButtonText: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#374151",
   },
   gradeButtonTextWhite: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#ffffff",
   },
   skipButton: {
     width: "100%",
@@ -350,6 +354,5 @@ const styles = StyleSheet.create({
   skipButtonText: {
     fontSize: 16,
     fontWeight: "500",
-    color: Colors.subduedTextColor,
   },
 });

@@ -1,7 +1,9 @@
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 
 export default function AudioWaveform({ isPlaying }: { isPlaying: boolean }) {
+  const { colors } = useTheme();
   const waveAnims = useRef(
     Array.from({ length: 20 }, () => new Animated.Value(0.3)),
   ).current;
@@ -47,6 +49,7 @@ export default function AudioWaveform({ isPlaying }: { isPlaying: boolean }) {
             style={[
               styles.waveBar,
               {
+                backgroundColor: colors.primary,
                 transform: [{ scaleY: waveAnim }],
                 height: 16 + (index % 4) * 6,
               },
@@ -74,7 +77,6 @@ const styles = StyleSheet.create({
   },
   waveBar: {
     width: 3,
-    backgroundColor: "#ff6640",
     borderRadius: 1.5,
     opacity: 0.8,
     minHeight: 8,

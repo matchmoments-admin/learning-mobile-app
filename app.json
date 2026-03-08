@@ -29,7 +29,7 @@
       ]
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -44,7 +44,6 @@
         }
       ],
       "expo-secure-store",
-      "expo-video",
       [
         "expo-av",
         {

@@ -1,7 +1,7 @@
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable, StyleSheet, View } from "react-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 
 export default function ProgressHeader({
   progress,
@@ -14,8 +14,10 @@ export default function ProgressHeader({
   totalCount: number;
   onClose: () => void;
 }) {
+  const { colors } = useTheme();
+
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.background }]}>
       <Pressable
         hitSlop={20}
         style={styles.closeButton}
@@ -23,7 +25,7 @@ export default function ProgressHeader({
         accessibilityRole="button"
         accessibilityLabel="Close lesson"
       >
-        <Ionicons name="close" size={18} color="#9ca3af" />
+        <Ionicons name="close" size={18} color={colors.textTertiary} />
       </Pressable>
       <View
         style={styles.progressContainer}
@@ -31,12 +33,12 @@ export default function ProgressHeader({
         accessibilityValue={{ min: 0, max: 100, now: progress }}
         accessibilityLabel={`Question ${currentCount} of ${totalCount}`}
       >
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]}></View>
+        <View style={[styles.progressBar, { backgroundColor: colors.border }]}>
+          <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: colors.primary }]}></View>
         </View>
-        <ThemedText style={styles.progressText}>
+        <Text style={styles.progressText}>
           {currentCount}/{totalCount}
-        </ThemedText>
+        </Text>
       </View>
     </View>
   );
@@ -50,8 +52,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-    backgroundColor: "white",
   },
   closeButton: {
     marginRight: 16,
@@ -67,12 +67,10 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     marginRight: 12,
-    backgroundColor: "#e5e7eb",
   },
   progressFill: {
     height: "100%",
     borderRadius: 4,
-    backgroundColor: Colors.primaryAccentColor,
   },
   progressText: {
     fontSize: 15,

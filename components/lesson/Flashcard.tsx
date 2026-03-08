@@ -1,8 +1,9 @@
 import { Term } from "@/constants/ContentTypes";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useLanguage } from "@/ctx/LanguageContext";
 import { useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 
 export default function Flashcard({
   word,
@@ -11,6 +12,7 @@ export default function Flashcard({
   word: Term;
   direction: "native-to-translation" | "translation-to-native";
 }) {
+  const { colors } = useTheme();
   const { hasRomanization } = useLanguage();
   const [isFlipped, setIsFlipped] = useState(false);
   const flipAnimation = useRef(new Animated.Value(0)).current;
@@ -54,29 +56,29 @@ export default function Flashcard({
   const NativeContent = ({ isBack }: { isBack?: boolean }) => (
     <View style={styles.nativeContent}>
       {hasRomanization() && word.romanization && (
-        <ThemedText
-          style={[styles.romanization, isBack && styles.backText]}
+        <Text
+          style={[styles.romanization, isBack && { color: colors.textInverse }]}
         >
           {word.romanization}
-        </ThemedText>
+        </Text>
       )}
-      <ThemedText
-        style={[styles.nativeScript, isBack && styles.backText]}
+      <Text
+        style={[styles.nativeScript, isBack && { color: colors.textInverse }]}
       >
         {word.nativeScript}
-      </ThemedText>
+      </Text>
     </View>
   );
 
   const TranslationContent = ({ isBack }: { isBack?: boolean }) => (
-    <ThemedText
+    <Text
       style={[
         isBack ? styles.translationBack : styles.translationFront,
-        isBack && styles.backText,
+        isBack && { color: colors.textInverse },
       ]}
     >
       {word.translation}
-    </ThemedText>
+    </Text>
   );
 
   const FrontContent = () => {
@@ -101,12 +103,28 @@ export default function Flashcard({
     >
       <View>
         <Animated.View
-          style={[styles.card, styles.cardFront, frontAnimatedStyle]}
+          style={[
+            styles.card,
+            styles.cardFront,
+            frontAnimatedStyle,
+            {
+              shadowColor: colors.shadow,
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
         >
           {FrontContent()}
         </Animated.View>
         <Animated.View
-          style={[styles.card, styles.cardBack, backAnimatedStyle]}
+          style={[
+            styles.card,
+            styles.cardBack,
+            backAnimatedStyle,
+            {
+              shadowColor: colors.shadow,
+            },
+          ]}
         >
           {BackContent()}
         </Animated.View>
@@ -124,7 +142,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backfaceVisibility: "hidden",
     borderRadius: 28,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 12,
@@ -133,9 +150,7 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
   },
   cardFront: {
-    backgroundColor: "#fff",
     borderWidth: 1,
-    borderColor: "#e5e7eb",
   },
   cardBack: {
     backgroundColor: "#1a1a2e",
@@ -160,9 +175,6 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     textAlign: "center",
     maxWidth: "90%",
-  },
-  backText: {
-    color: "white",
   },
   translationFront: {
     fontSize: 40,

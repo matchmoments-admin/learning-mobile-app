@@ -1,5 +1,7 @@
-import { Question } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { MultipleChoiceQuestion, SingleResponseQuestion, ListeningMultipleChoiceQuestion } from "@/constants/ContentTypes";
+
+type AudioQuestion = MultipleChoiceQuestion | SingleResponseQuestion | ListeningMultipleChoiceQuestion;
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
@@ -12,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 import AudioWaveform from "./AudioWaveform";
 
 export default function AudioPrompt({
@@ -39,7 +41,7 @@ export default function AudioPrompt({
   onStartRecord: () => void;
   onStopRecord: () => void;
   onRevealNativeScript: () => void;
-  currentQuestion: Question;
+  currentQuestion: AudioQuestion;
   showNativeScript: boolean;
   selectedOption: number | null;
   scaleAnim: Animated.Value;
@@ -48,6 +50,7 @@ export default function AudioPrompt({
   listeningScale: Animated.Value;
   fadeAnim: Animated.Value;
 }) {
+  const { colors } = useTheme();
   const { hasRomanization, getNativeScriptLabel } = useLanguage();
 
   const playbackDisabled = !selectedOption && (isPlaying || hasListenedToAudio);
@@ -100,12 +103,20 @@ export default function AudioPrompt({
             {
               backgroundColor: selectedOption
                 ? isRecognizing
-                  ? "#ef4444"
-                  : Colors.primaryAccentColor
+                  ? colors.error
+                  : colors.primary
                 : playbackDisabled
                   ? "#ff8c66"
-                  : Colors.primaryAccentColor,
+                  : colors.primary,
               transform: [{ scale: scaleAnim }],
+              ...Platform.select({
+                ios: {
+                  shadowColor: colors.shadow,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.25,
+                  shadowRadius: 8,
+                },
+              }),
             },
           ]}
         >
@@ -125,9 +136,9 @@ export default function AudioPrompt({
       {selectedOption && isRecognizing ? (
         <View style={styles.recordingStatus}>
           <View style={styles.recordingIndicatorLarge}>
-            <View style={styles.recordingDotLarge}></View>
+            <View style={[styles.recordingDotLarge, { backgroundColor: colors.error }]}></View>
           </View>
-          <ThemedText style={styles.recordingText}>Recording...</ThemedText>
+          <Text style={[styles.recordingText, { color: colors.error }]}>Recording...</Text>
         </View>
       ) : (
         <AudioWaveform isPlaying={isPlaying} />
@@ -141,11 +152,11 @@ export default function AudioPrompt({
       >
         {selectedOption ? (
           <View style={styles.recordingPromptTop}>
-            <ThemedText style={styles.recordingPromptText}>
+            <Text style={[styles.recordingPromptText, { color: colors.textSecondary }]}>
               {isRecognizing
                 ? "Speak your response now"
                 : "Tap the microphone to record"}
-            </ThemedText>
+            </Text>
           </View>
         ) : !hasListenedToAudio ? (
           <View style={styles.listeningPrompt}>
@@ -155,12 +166,12 @@ export default function AudioPrompt({
                 { opacity: instructionOpacity },
               ]}
             >
-              <ThemedText style={[styles.instructionText, { marginBottom: 8 }]}>
+              <Text style={[styles.instructionText, { marginBottom: 8, color: colors.textSecondary }]}>
                 Tap play to listen carefully
-              </ThemedText>
-              <ThemedText style={[styles.instructionHint]}>
+              </Text>
+              <Text style={[styles.instructionHint, { color: colors.textTertiary }]}>
                 The audio plays once before each response
-              </ThemedText>
+              </Text>
             </Animated.View>
             <Animated.View
               style={[
@@ -171,24 +182,24 @@ export default function AudioPrompt({
                 },
               ]}
             >
-              <ThemedText style={styles.revealButtonText}>
+              <Text style={[styles.revealButtonText, { color: colors.textSecondary }]}>
                 Listening...
-              </ThemedText>
+              </Text>
             </Animated.View>
           </View>
         ) : showNativeScript ? (
           <TouchableOpacity onPress={onRevealNativeScript}>
             <Animated.View style={[styles.nativeScriptText, { opacity: fadeAnim }]}>
               {hasRomanization() && currentQuestion.prompt.romanization && (
-                <ThemedText style={styles.romanization}>
+                <Text style={styles.romanization}>
                   {currentQuestion.prompt.romanization}
-                </ThemedText>
+                </Text>
               )}
-              <ThemedText
-                style={[styles.nativeScript, { color: Colors.subduedTextColor }]}
+              <Text
+                style={[styles.nativeScript, { color: colors.textSecondary }]}
               >
                 {currentQuestion.prompt.nativeScript}
-              </ThemedText>
+              </Text>
             </Animated.View>
           </TouchableOpacity>
         ) : (
@@ -201,9 +212,9 @@ export default function AudioPrompt({
               accessibilityLabel="Reveal what was said"
               accessibilityHint="Tap to show the phrase in the target language"
             >
-              <ThemedText style={styles.instructionText}>
+              <Text style={[styles.instructionText, { color: colors.textSecondary }]}>
                 Tap here to reveal what was said
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
           )
         )}
@@ -217,18 +228,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.primaryAccentColor,
     justifyContent: "center",
     alignItems: "center",
     marginVertical: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-      },
-    }),
   },
   nativeScriptText: {
     alignItems: "center",
@@ -250,7 +252,6 @@ const styles = StyleSheet.create({
   },
   revealButtonText: {
     fontSize: 16,
-    color: Colors.subduedTextColor,
     marginBottom: 4,
   },
   recordingStatus: {
@@ -264,12 +265,10 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#ef4444",
   },
   recordingText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#ef4444",
   },
   promptTextContainer: {
     alignItems: "center",
@@ -280,7 +279,6 @@ const styles = StyleSheet.create({
   },
   recordingPromptText: {
     fontSize: 16,
-    color: Colors.subduedTextColor,
     textAlign: "center",
   },
   listeningPrompt: {
@@ -300,11 +298,9 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 16,
     textAlign: "center",
-    color: Colors.subduedTextColor,
   },
   instructionHint: {
     fontSize: 14,
     textAlign: "center",
-    color: "#9ca3af",
   },
 });

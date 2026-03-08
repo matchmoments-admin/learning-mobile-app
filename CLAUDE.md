@@ -41,7 +41,28 @@ constants/
   ContentTypes.ts          # Generic type system (Term, Phrase, Question, ContentPack, etc.)
   Languages.ts             # LanguageConfig definitions + helpers
   CourseData.ts            # Legacy Mandarin types (kept as migration reference only)
-  theme.ts                 # Color palette & spacing
+
+design-system/
+  ThemeProvider.tsx         # DesignSystemProvider + useTheme() hook
+  tokens/
+    colors.ts              # WCAG-audited palette, lightTheme/darkTheme
+    typography.ts           # Plus Jakarta Sans + Lexend type scale
+    spacing.ts              # 4px base / 8px grid spacing tokens
+    radius.ts               # Border radius tokens
+    shadows.ts              # Cross-platform shadow tokens
+    animation.ts            # Duration, easing, spring presets
+    index.ts                # Barrel re-export
+  components/
+    Text.tsx                # Themed text (replaces ThemedText)
+    Button.tsx              # Primary/secondary/ghost button
+    Icon.tsx                # Ionicons wrapper with theme colors
+    Card.tsx                # Elevated/outlined/filled card
+    Badge.tsx               # Semantic status badges
+    Input.tsx               # Themed text input
+    ProgressBar.tsx          # Animated progress bar
+    index.ts                # Barrel re-export
+  hooks/
+    useAccessibleTheme.ts   # Composite hook: theme + accessibility
 
 ctx/
   AuthContext.tsx           # Auth state + Supabase session
@@ -80,6 +101,7 @@ scripts/
 ## Key Architecture Decisions
 
 - **Generic type system:** All content uses `Term`, `Phrase`, `Prompt`, `ContentPack` from `ContentTypes.ts`. Never use the old Mandarin-specific types from `CourseData.ts`.
+- **Design system:** All colors come from `useTheme()` via `@/design-system/ThemeProvider`. Never hardcode hex colors — use token values. Shared components live in `design-system/components/`. Typography uses Plus Jakarta Sans (primary) and Lexend (accessible alternative).
 - **Content packs:** Curriculum is packaged as JSON files in `assets/data/packs/`. Each pack has a `languageCode`, difficulty, chapters, and optional conversation scenarios.
 - **Language-aware rendering:** `LanguageConfig.renderingConfig` controls whether romanization is shown, what labels to use, etc. Components check this config rather than hardcoding language behavior.
 - **Offline-first:** All user data writes go to AsyncStorage first, then sync to Supabase when online. Read from local storage as source of truth.

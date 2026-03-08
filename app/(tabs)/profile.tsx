@@ -1,8 +1,10 @@
 import { Paywall } from "@/components/subscription/Paywall";
-import { ThemedText } from "@/components/themed-text";
-import { Colors } from "@/constants/theme";
+import { Text } from "@/design-system/components/Text";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useAuth } from "@/ctx/AuthContext";
 import { useSpeakingListningStats } from "@/hooks/useSpeakingListeningStats";
+import { useStreakState } from "@/hooks/useStreakState";
+import { useXpState } from "@/hooks/useXpState";
 import { supabase } from "@/utils/supabase";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useState } from "react";
@@ -12,9 +14,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 export default function ProfileContent() {
+  const { colors } = useTheme();
   const { isPremium, premiumExpiresAt, profile, user } = useAuth();
   const [paywallVisible, setPaywallVisible] = useState(false);
   const { stats, loading } = useSpeakingListningStats();
+  const { streakState } = useStreakState();
+  const { xpState } = useXpState();
 
   const handleSignOut = async () => {
     try {
@@ -38,15 +43,15 @@ export default function ProfileContent() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: Colors.light.background }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       edges={["top", "left", "right"]}
     >
       <View style={styles.container}>
         {/* Header */}
         <View
-          style={[styles.header, { borderBottomColor: Colors.borderColor }]}
+          style={[styles.header, { borderBottomColor: colors.border }]}
         >
-          <ThemedText style={styles.headerTitle}>Profile</ThemedText>
+          <Text style={styles.headerTitle}>Profile</Text>
         </View>
 
         <ScrollView
@@ -58,69 +63,89 @@ export default function ProfileContent() {
             style={[
               styles.profileCard,
               {
-                backgroundColor: Colors.light.background,
-                borderColor: Colors.borderColor,
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                shadowColor: colors.shadow,
               },
             ]}
           >
             <View
               style={[
                 styles.avatarContainer,
-                { backgroundColor: Colors.primaryAccentColor },
+                { backgroundColor: colors.primary },
               ]}
             >
-              <ThemedText style={styles.avatarText}>
+              <Text style={[styles.avatarText, { color: colors.textInverse }]}>
                 {profile.full_name.charAt(0).toUpperCase()}
-              </ThemedText>
+              </Text>
             </View>
-            <ThemedText style={styles.userName}>{profile.full_name}</ThemedText>
-            <ThemedText
-              style={[styles.userEmail, { color: Colors.subduedTextColor }]}
+            <Text style={styles.userName}>{profile.full_name}</Text>
+            <Text
+              style={[styles.userEmail, { color: colors.textSecondary }]}
             >
               {user?.email}
-            </ThemedText>
+            </Text>
           </View>
 
           {/* Statistics */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <View style={styles.statValueContainer}>
-                <ThemedText style={styles.statValue}>
-                  {Math.floor(stats?.minutesSpoken ?? 0)}
-                </ThemedText>
-                <Ionicons
-                  name="arrow-up"
-                  size={14}
-                  color="#34C759"
-                  style={{ marginLeft: 2 }}
-                />
-                <ThemedText style={styles.statChangePositive}>
-                  {Math.floor(stats?.minutesSpoken ?? 0)}
-                </ThemedText>
+                <Text style={styles.statValue}>
+                  {xpState?.totalXp ?? 0}
+                </Text>
               </View>
-              <ThemedText
-                style={[styles.statLabel, { color: Colors.subduedTextColor }]}
+              <Text
+                style={[styles.statLabel, { color: colors.textSecondary }]}
               >
-                minutes spoken
-              </ThemedText>
+                total XP
+              </Text>
             </View>
 
             <View
               style={[
                 styles.statSeparator,
-                { backgroundColor: Colors.borderColor },
+                { backgroundColor: colors.border },
               ]}
             />
 
             <View style={styles.statItem}>
               <View style={styles.statValueContainer}>
-                <ThemedText style={styles.statValue}>0</ThemedText>
+                <Text style={styles.statValue}>
+                  {streakState?.currentStreak ?? 0}
+                </Text>
+                <Ionicons
+                  name="flame"
+                  size={16}
+                  color={colors.warning}
+                  style={{ marginLeft: 2 }}
+                />
               </View>
-              <ThemedText
-                style={[styles.statLabel, { color: Colors.subduedTextColor }]}
+              <Text
+                style={[styles.statLabel, { color: colors.textSecondary }]}
               >
                 day streak
-              </ThemedText>
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.statSeparator,
+                { backgroundColor: colors.border },
+              ]}
+            />
+
+            <View style={styles.statItem}>
+              <View style={styles.statValueContainer}>
+                <Text style={styles.statValue}>
+                  {xpState?.level ?? 1}
+                </Text>
+              </View>
+              <Text
+                style={[styles.statLabel, { color: colors.textSecondary }]}
+              >
+                level
+              </Text>
             </View>
           </View>
 
@@ -129,7 +154,8 @@ export default function ProfileContent() {
             style={[
               styles.premiumCard,
               {
-                backgroundColor: Colors.primaryAccentColor,
+                backgroundColor: colors.primary,
+                shadowColor: colors.shadow,
               },
             ]}
             onPress={() => {
@@ -137,37 +163,38 @@ export default function ProfileContent() {
             }}
           >
             <View style={styles.premiumLeft}>
-              <Ionicons name="star" size={24} color="#FFF" />
+              <Ionicons name="star" size={24} color={colors.textInverse} />
               <View style={styles.premiumText}>
-                <ThemedText style={styles.premiumTitle}>
+                <Text style={[styles.premiumTitle, { color: colors.textInverse }]}>
                   {isPremium ? "Premium Active" : "Get Premium"}
-                </ThemedText>
-                <ThemedText style={styles.premiumSubtitle}>
+                </Text>
+                <Text style={[styles.premiumSubtitle, { color: colors.textInverse }]}>
                   {isPremium
                     ? premiumExpiresAt
                       ? `Premium ends ${new Date(premiumExpiresAt).toLocaleDateString()}`
                       : "Unlocked premium features"
                     : "Unlock all chapters & AI conversations"}
-                </ThemedText>
+                </Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#FFF" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textInverse} />
           </TouchableOpacity>
 
           {/* Settings Section */}
           <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Settings</ThemedText>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Settings</Text>
             <View
               style={[
                 styles.menuCard,
                 {
-                  backgroundColor: Colors.light.background,
-                  borderColor: Colors.borderColor,
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  shadowColor: colors.shadow,
                 },
               ]}
             >
               <TouchableOpacity
-                style={styles.menuItem}
+                style={[styles.menuItem, { borderColor: colors.border }]}
                 onPress={() =>
                   Alert.alert(
                     "Settings",
@@ -179,16 +206,16 @@ export default function ProfileContent() {
                   <Ionicons
                     name="settings-outline"
                     size={24}
-                    color={Colors.subduedTextColor}
+                    color={colors.textSecondary}
                   />
-                  <ThemedText style={styles.menuItemTitle}>
+                  <Text style={styles.menuItemTitle}>
                     App Settings
-                  </ThemedText>
+                  </Text>
                 </View>
                 <Ionicons
                   name="chevron-forward"
                   size={20}
-                  color={Colors.subduedTextColor}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
               <TouchableOpacity
@@ -204,16 +231,16 @@ export default function ProfileContent() {
                   <Ionicons
                     name="help-circle-outline"
                     size={24}
-                    color={Colors.subduedTextColor}
+                    color={colors.textSecondary}
                   />
-                  <ThemedText style={styles.menuItemTitle}>
+                  <Text style={styles.menuItemTitle}>
                     Help & Support
-                  </ThemedText>
+                  </Text>
                 </View>
                 <Ionicons
                   name="chevron-forward"
                   size={20}
-                  color={Colors.subduedTextColor}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -222,10 +249,10 @@ export default function ProfileContent() {
           {/* Sign Out Button */}
           <TouchableOpacity
             onPress={handleSignOut}
-            style={[styles.signOutButton, { borderColor: Colors.borderColor }]}
+            style={[styles.signOutButton, { borderColor: colors.border }]}
           >
-            <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-            <ThemedText style={styles.signOutText}>Sign Out</ThemedText>
+            <Ionicons name="log-out-outline" size={20} color={colors.error} />
+            <Text style={[styles.signOutText, { color: colors.error }]}>Sign Out</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -263,7 +290,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 2,
     marginBottom: 20,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -280,7 +306,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontWeight: "700",
-    color: "#fff",
     lineHeight: 36,
     textAlign: "center",
   },
@@ -315,7 +340,6 @@ const styles = StyleSheet.create({
   statChangePositive: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#34C759",
   },
   statLabel: {
     fontSize: 11,
@@ -334,7 +358,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 24,
     marginBottom: 32,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
@@ -352,12 +375,10 @@ const styles = StyleSheet.create({
   premiumTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#fff",
     marginBottom: 2,
   },
   premiumSubtitle: {
     fontSize: 13,
-    color: "rgba(255, 255, 255, 0.9)",
   },
   section: {
     marginBottom: 24,
@@ -365,7 +386,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#8e8e93",
     textTransform: "uppercase",
     marginBottom: 12,
   },
@@ -373,7 +393,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 2,
     overflow: "hidden",
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -386,7 +405,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 0.5,
-    borderColor: "#bababeff",
   },
   menuItemLast: {
     flexDirection: "row",
@@ -419,6 +437,5 @@ const styles = StyleSheet.create({
   signOutText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#DC2626",
   },
 });

@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/theme";
+import { lightTheme } from "@/design-system/tokens/colors";
 import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -10,6 +10,9 @@ interface State {
   hasError: boolean;
 }
 
+// ErrorBoundary is a class component and cannot use hooks.
+// It uses lightTheme tokens directly as a fallback since it renders
+// outside the normal provider tree when an error occurs.
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
 
@@ -50,29 +53,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 32,
-    backgroundColor: "#fff",
+    backgroundColor: lightTheme.background,
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 12,
-    color: "#1a1a2e",
+    color: lightTheme.text,
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.subduedTextColor,
+    color: lightTheme.textSecondary,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 22,
   },
   button: {
-    backgroundColor: Colors.primaryAccentColor,
+    backgroundColor: lightTheme.primary,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 24,
   },
   buttonText: {
-    color: "#fff",
+    color: lightTheme.textInverse,
     fontSize: 16,
     fontWeight: "600",
   },

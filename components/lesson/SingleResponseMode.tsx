@@ -1,5 +1,5 @@
 import { SpeakingOption } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useLanguage } from "@/ctx/LanguageContext";
 import { useState } from "react";
 import {
@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 
 export default function SingleResponseMode({
   option,
@@ -18,6 +18,7 @@ export default function SingleResponseMode({
   option: SpeakingOption;
   optionSelectionAnim: Animated.Value;
 }) {
+  const { colors } = useTheme();
   const [showAnswer, setShowAnswer] = useState(false);
   const { activeLanguage, hasRomanization } = useLanguage();
 
@@ -40,17 +41,28 @@ export default function SingleResponseMode({
             },
           ]}
         >
-          <ThemedText style={styles.sayItPrompt}>
+          <Text style={[styles.sayItPrompt, { color: colors.primary }]}>
             Record this response in {activeLanguage.displayName}
-          </ThemedText>
+          </Text>
         </Animated.View>
       </View>
       <View
-        style={[styles.singleResponseContainer, { backgroundColor: "#ffffff" }]}
+        style={[
+          styles.singleResponseContainer,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.primary,
+            ...Platform.select({
+              ios: {
+                shadowColor: colors.shadow,
+              },
+            }),
+          },
+        ]}
       >
-        <ThemedText style={styles.singleResponseTranslation}>
+        <Text style={styles.singleResponseTranslation}>
           {option.translation}
-        </ThemedText>
+        </Text>
         <TouchableOpacity
           style={styles.revealButton}
           onPress={() => setShowAnswer((v) => !v)}
@@ -60,24 +72,24 @@ export default function SingleResponseMode({
           accessibilityHint="Tap to toggle the answer"
         >
           {!showAnswer ? (
-            <ThemedText style={styles.instructionText}>
+            <Text style={[styles.instructionText, { color: colors.textSecondary }]}>
               Tap here to reveal how to say it
-            </ThemedText>
+            </Text>
           ) : (
             <View style={styles.singleResponsePhrase}>
               {hasRomanization() && option.phrase.romanization && (
-                <ThemedText style={styles.optionDetailsRomanization}>
+                <Text style={styles.optionDetailsRomanization}>
                   {option.phrase.romanization}
-                </ThemedText>
+                </Text>
               )}
-              <ThemedText
+              <Text
                 style={[
                   styles.optionDetailsNativeScript,
-                  { color: Colors.subduedTextColor },
+                  { color: colors.textSecondary },
                 ]}
               >
                 {option.phrase.nativeScript}
-              </ThemedText>
+              </Text>
             </View>
           )}
         </TouchableOpacity>
@@ -99,7 +111,6 @@ const styles = StyleSheet.create({
   sayItPrompt: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.primaryAccentColor,
     textAlign: "center",
   },
   revealButton: {
@@ -110,7 +121,6 @@ const styles = StyleSheet.create({
   instructionText: {
     fontSize: 16,
     textAlign: "center",
-    color: Colors.subduedTextColor,
   },
   optionDetailsNativeScript: {
     fontSize: 16,
@@ -124,12 +134,10 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: Colors.primaryAccentColor,
     overflow: "visible",
     alignItems: "center",
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,

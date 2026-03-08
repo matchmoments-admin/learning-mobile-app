@@ -68,10 +68,31 @@ export interface ListeningMultipleChoiceQuestion extends BaseQuestion {
   correctOptionId: number;
 }
 
+export interface FillInBlankQuestion extends BaseQuestion {
+  type: "fill_in_blank";
+  prompt: string;
+  sentence: {
+    nativeScript: string;
+    romanization?: string;
+    translation: string;
+  };
+  correctAnswer: string;
+  acceptableAnswers?: string[];
+  options?: string[];
+}
+
+export interface MatchingQuestion extends BaseQuestion {
+  type: "matching";
+  prompt: string;
+  pairs: Array<{ id: number; left: string; right: string }>;
+}
+
 export type Question =
   | MultipleChoiceQuestion
   | SingleResponseQuestion
-  | ListeningMultipleChoiceQuestion;
+  | ListeningMultipleChoiceQuestion
+  | FillInBlankQuestion
+  | MatchingQuestion;
 
 // ---------------------------------------------------------------------------
 // Course structure

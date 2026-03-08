@@ -1,5 +1,5 @@
 import { Question, SpeakingOption } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useAccessibility } from "@/ctx/AccessibilityContext";
 import { useLanguage } from "@/ctx/LanguageContext";
 import { useAuth } from "@/ctx/AuthContext";
@@ -9,21 +9,30 @@ import {
   recordQuestionAnswered,
   recordQuestionListened,
 } from "@/lib/services/stats-service";
+import { calculateScore, ScoreBreakdown } from "@/lib/types/scoring";
+import { awardXp } from "@/lib/services/xp-service";
+import { saveScore } from "@/lib/services/scoring-service";
+import { recordActivity } from "@/lib/services/streak-service";
+import { incrementGoalProgress } from "@/lib/services/daily-goal-service";
+import { updateTermMastery } from "@/lib/services/mastery-service";
+import { termKey } from "@/lib/types/mastery";
 import { supabase } from "@/utils/supabase";
 import { Audio, InterruptionModeIOS } from "expo-av";
 import * as FileSystem from "expo-file-system/legacy";
 import { router } from "expo-router";
 import * as Speech from "expo-speech";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Animated, StyleSheet, TouchableOpacity, View } from "react-native";
 import { toast } from "sonner-native";
 import { compareTwoStrings } from "string-similarity";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import AudioPrompt from "./AudioPrompt";
 import { FeedbackView } from "./FeedbackView";
+import FillInBlankMode from "./FillInBlankMode";
 import LessonCompleteScreen from "./LessonCompleteScreen";
 import ListeningMultipleChoiceMode from "./ListeningMultipleChoiceMode";
+import MatchingMode from "./MatchingMode";
 import MultipleChoiceMode from "./MultipleChoiceMode";
 import ProgressHeader from "./ProgressHeader";
 import SentenceBreakdownCard from "./SentenceBreakdownCard";
@@ -52,7 +61,8 @@ export default function LessonContent({
   questions: Question[];
   lessonId: string;
 }) {
-  const { activeLanguage } = useLanguage();
+  const { colors } = useTheme();
+  const { activeLanguage, activePack } = useLanguage();
   const { user } = useAuth();
   const { preferences } = useAccessibility();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -79,6 +89,8 @@ export default function LessonContent({
   // Lesson completion
   const [showCompleteScreen, setShowCompleteScreen] = useState(false);
   const [lessonStats, setLessonStats] = useState<LessonStats | null>(null);
+  const [scoreBreakdown, setScoreBreakdown] = useState<ScoreBreakdown | null>(null);
+  const [xpEarned, setXpEarned] = useState(0);
   const [questionAttempts, setQuestionAttempts] = useState<
     Record<number, number>
   >({});
@@ -98,6 +110,11 @@ export default function LessonContent({
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const selectedSentence = useMemo((): SpeakingOption | null => {
+    // New question types don't use SpeakingOption
+    if (currentQuestion.type === "fill_in_blank" || currentQuestion.type === "matching") {
+      return null;
+    }
+
     if (currentQuestion.type === "listening_mc") {
       if (showResult) {
         const correctTranslation =
@@ -223,6 +240,7 @@ export default function LessonContent({
   };
 
   const playAudio = () => {
+    if (currentQuestion.type === "fill_in_blank" || currentQuestion.type === "matching") return;
     const textToSpeak =
       currentQuestion.prompt.nativeScript || currentQuestion.prompt.romanization || "";
 
@@ -485,6 +503,13 @@ export default function LessonContent({
                   ?.translation || "";
               nativeScript = q.prompt.nativeScript;
               romanization = q.prompt.romanization;
+            } else if (q.type === "fill_in_blank") {
+              translation = q.sentence.translation;
+              nativeScript = q.sentence.nativeScript;
+              romanization = q.sentence.romanization;
+            } else if (q.type === "matching") {
+              translation = q.prompt;
+              nativeScript = q.pairs.map((p) => p.left).join(", ");
             } else {
               const option = q.options[0];
               translation = option.translation;
@@ -507,6 +532,46 @@ export default function LessonContent({
           wrongQuestions:
             wrongQuestionsList.length > 0 ? wrongQuestionsList : undefined,
         };
+
+        // Calculate score breakdown
+        const score = calculateScore({
+          correctAnswers: correctAnswersCount,
+          totalQuestions: questions.length,
+          questionAttempts,
+        });
+        setScoreBreakdown(score);
+
+        // Award XP + streak + daily goal (fire-and-forget)
+        const earnedXp = 20 + (accuracy === 100 ? 15 : 0);
+        setXpEarned(earnedXp);
+        void awardXp("lesson_complete", user?.id);
+        if (accuracy === 100) {
+          void awardXp("perfect_lesson", user?.id);
+        }
+        void recordActivity(user?.id);
+        void incrementGoalProgress(user?.id);
+        void saveScore(lessonId, score, user?.id);
+
+        // Update term mastery for each question
+        const packId = activePack?.id ?? "unknown";
+        for (const q of questions) {
+          const wasCorrect = !wrongQuestions.has(q.id);
+          if (q.type === "listening_mc") {
+            const key = termKey(q.prompt.nativeScript, q.options.find(o => o.id === q.correctOptionId)?.translation ?? "");
+            void updateTermMastery(key, packId, wasCorrect, user?.id);
+          } else if (q.type === "fill_in_blank") {
+            const key = termKey(q.sentence.nativeScript, q.sentence.translation);
+            void updateTermMastery(key, packId, wasCorrect, user?.id);
+          } else if (q.type === "matching") {
+            for (const pair of q.pairs) {
+              void updateTermMastery(termKey(pair.left, pair.right), packId, wasCorrect, user?.id);
+            }
+          } else {
+            const opt = q.options[0];
+            const key = termKey(opt.phrase.nativeScript, opt.translation);
+            void updateTermMastery(key, packId, wasCorrect, user?.id);
+          }
+        }
 
         setLessonStats(finalStats);
         setShowCompleteScreen(true);
@@ -571,6 +636,8 @@ export default function LessonContent({
     return (
       <LessonCompleteScreen
         lessonStats={lessonStats}
+        scoreBreakdown={scoreBreakdown ?? undefined}
+        xpEarned={xpEarned}
         onContinue={async () => {
           await incrementLessonCompletion(lessonId, user?.id);
           if (user?.id) {
@@ -623,11 +690,46 @@ export default function LessonContent({
 
       {/* Main content */}
       <View style={styles.content}>
+        {/* Fill-in-blank mode */}
+        {currentQuestion.type === "fill_in_blank" && !showResult && (
+          <View style={styles.optionsSection}>
+            <FillInBlankMode
+              question={currentQuestion}
+              onAnswer={(correct) => {
+                setIsCorrect(correct);
+                setShowResult(true);
+                if (correct) {
+                  void recordQuestionAnswered(user?.id);
+                }
+              }}
+              disabled={showResult}
+            />
+          </View>
+        )}
+
+        {/* Matching mode */}
+        {currentQuestion.type === "matching" && !showResult && (
+          <View style={styles.optionsSection}>
+            <MatchingMode
+              question={currentQuestion}
+              onComplete={(allCorrect) => {
+                setIsCorrect(allCorrect);
+                setShowResult(true);
+                if (allCorrect) {
+                  void recordQuestionAnswered(user?.id);
+                }
+              }}
+              disabled={showResult}
+            />
+          </View>
+        )}
+
+        {currentQuestion.type !== "fill_in_blank" && currentQuestion.type !== "matching" && (<>
         <Animated.View
           style={[
             styles.audioSection,
             {
-              backgroundColor: "#f9fafb",
+              backgroundColor: colors.backgroundSecondary,
               minHeight: audioSectionAnimHeight,
               flex: hasListenedToAudio ? 0 : 1,
               justifyContent: "center",
@@ -703,24 +805,25 @@ export default function LessonContent({
             )}
           </Animated.View>
         )}
+        </>)}
 
         {isLoading && (
           <View style={styles.bottomSection}>
             <View style={styles.loadingContainer}>
               <ActivityIndicator
                 size="large"
-                color={Colors.primaryAccentColor}
+                color={colors.primary}
               />
-              <ThemedText
-                style={[styles.loadingText, { color: Colors.subduedTextColor }]}
+              <Text
+                style={[styles.loadingText, { color: colors.textSecondary }]}
               >
                 Analyzing your pronunciation...
-              </ThemedText>
+              </Text>
             </View>
           </View>
         )}
 
-        {/* Feedback view */}
+        {/* Feedback view for audio-based questions */}
         {showResult && selectedSentence && (
           <Animated.View
             style={[
@@ -750,6 +853,51 @@ export default function LessonContent({
             />
           </Animated.View>
         )}
+
+        {/* Feedback for fill-in-blank / matching */}
+        {showResult &&
+          !selectedSentence &&
+          (currentQuestion.type === "fill_in_blank" ||
+            currentQuestion.type === "matching") && (
+            <View style={[styles.feedbackWrapper]}>
+              <View
+                style={[
+                  styles.simpleFeedback,
+                  {
+                    backgroundColor: isCorrect
+                      ? colors.success + "15"
+                      : colors.error + "15",
+                    borderColor: isCorrect ? colors.success : colors.error,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.simpleFeedbackText,
+                    { color: isCorrect ? colors.success : colors.error },
+                  ]}
+                >
+                  {isCorrect ? "Correct!" : "Not quite"}
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.continueBtn,
+                    { backgroundColor: colors.primary },
+                  ]}
+                  onPress={nextQuestion}
+                >
+                  <Text
+                    style={[
+                      styles.continueBtnText,
+                      { color: colors.textInverse },
+                    ]}
+                  >
+                    Continue
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
       </View>
 
       {/* Sentence Breakdown Card */}
@@ -826,5 +974,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     zIndex: 1000,
+  },
+  simpleFeedback: {
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: "center",
+    gap: 12,
+  },
+  simpleFeedbackText: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  continueBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+  },
+  continueBtnText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

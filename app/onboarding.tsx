@@ -1,7 +1,7 @@
 import { Paywall } from "@/components/subscription/Paywall";
-import { ThemedText } from "@/components/themed-text";
+import { Text } from "@/design-system/components/Text";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { LANGUAGES } from "@/constants/Languages";
-import { Colors } from "@/constants/theme";
 import { useAuth } from "@/ctx/AuthContext";
 import { useLanguage } from "@/ctx/LanguageContext";
 import { supabase } from "@/utils/supabase";
@@ -118,7 +118,7 @@ const INTERESTS = [
 const TOTAL_STEPS = 6;
 
 export default function OnboardingScreen() {
-  const colors = Colors["light"];
+  const { colors } = useTheme();
   const { setActiveLanguageCode } = useLanguage();
 
   const [step, setStep] = useState(0);
@@ -220,17 +220,17 @@ export default function OnboardingScreen() {
 
   const renderStep0Name = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="title" style={styles.title}>
+      <Text type="title" style={styles.title}>
         What should we call you?
-      </ThemedText>
-      <ThemedText style={styles.subtitle}>
+      </Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
         Your name will be used to personalize your lessons.
-      </ThemedText>
+      </Text>
 
       <TextInput
         style={[styles.input, { color: colors.text, borderColor: colors.icon }]}
         placeholder="Your Name"
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={colors.textTertiary}
         value={name}
         onChangeText={setName}
         autoFocus
@@ -240,9 +240,9 @@ export default function OnboardingScreen() {
 
   const renderStep1Subject = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="title" style={styles.title}>
+      <Text type="title" style={styles.title}>
         What would you like to learn?
-      </ThemedText>
+      </Text>
 
       <ScrollView
         contentContainerStyle={{ rowGap: 16 }}
@@ -255,8 +255,9 @@ export default function OnboardingScreen() {
             style={[
               styles.optionCard,
               styles.motivationCard,
+              { borderColor: colors.border },
               selectedSubject === s.id && {
-                borderColor: Colors.primaryAccentColor,
+                borderColor: colors.primary,
               },
               s.disabled && { opacity: 0.5 },
             ]}
@@ -267,24 +268,24 @@ export default function OnboardingScreen() {
               size={24}
               color={
                 selectedSubject === s.id
-                  ? Colors.primaryAccentColor
+                  ? colors.primary
                   : colors.icon
               }
             />
             <View style={{ flex: 1 }}>
-              <ThemedText
+              <Text
                 style={[
                   styles.optionTitle,
                   selectedSubject === s.id && {
-                    color: Colors.primaryAccentColor,
+                    color: colors.primary,
                   },
                 ]}
               >
                 {s.title}
-              </ThemedText>
-              <ThemedText style={styles.optionDescription}>
+              </Text>
+              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
                 {s.description}
-              </ThemedText>
+              </Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -294,9 +295,9 @@ export default function OnboardingScreen() {
 
   const renderStep2Language = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="title" style={styles.title}>
+      <Text type="title" style={styles.title}>
         Which language?
-      </ThemedText>
+      </Text>
 
       <ScrollView
         contentContainerStyle={{ rowGap: 16 }}
@@ -309,27 +310,28 @@ export default function OnboardingScreen() {
             style={[
               styles.optionCard,
               styles.motivationCard,
+              { borderColor: colors.border },
               selectedLanguage === lang.id && {
-                borderColor: Colors.primaryAccentColor,
+                borderColor: colors.primary,
               },
               !lang.hasContent && { opacity: 0.5 },
             ]}
             onPress={() => setSelectedLanguage(lang.id)}
           >
             <View style={{ flex: 1 }}>
-              <ThemedText
+              <Text
                 style={[
                   styles.optionTitle,
                   selectedLanguage === lang.id && {
-                    color: Colors.primaryAccentColor,
+                    color: colors.primary,
                   },
                 ]}
               >
                 {lang.title}
-              </ThemedText>
-              <ThemedText style={styles.optionDescription}>
+              </Text>
+              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
                 {lang.hasContent ? lang.nativeName : "Coming soon"}
-              </ThemedText>
+              </Text>
             </View>
           </TouchableOpacity>
         ))}
@@ -339,9 +341,9 @@ export default function OnboardingScreen() {
 
   const renderStep3Level = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="title" style={styles.title}>
+      <Text type="title" style={styles.title}>
         How much {selectedLangConfig?.displayName ?? "do you"} know?
-      </ThemedText>
+      </Text>
 
       <ScrollView
         contentContainerStyle={{ rowGap: 16 }}
@@ -352,23 +354,24 @@ export default function OnboardingScreen() {
             key={l.id}
             style={[
               styles.optionCard,
+              { borderColor: colors.border },
               level === l.id && {
-                borderColor: Colors.primaryAccentColor,
+                borderColor: colors.primary,
               },
             ]}
             onPress={() => setLevel(l.id)}
           >
-            <ThemedText
+            <Text
               style={[
                 styles.optionTitle,
-                level === l.id && { color: Colors.primaryAccentColor },
+                level === l.id && { color: colors.primary },
               ]}
             >
               {l.title}
-            </ThemedText>
-            <ThemedText style={[styles.optionDescription]}>
+            </Text>
+            <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
               {l.description}
-            </ThemedText>
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -377,10 +380,10 @@ export default function OnboardingScreen() {
 
   const renderStep4Motivation = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="title" style={styles.title}>
+      <Text type="title" style={styles.title}>
         Why are you learning?
-      </ThemedText>
-      <ThemedText style={styles.subtitle}>Select all that apply.</ThemedText>
+      </Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Select all that apply.</Text>
 
       <ScrollView
         contentContainerStyle={{ rowGap: 16 }}
@@ -395,8 +398,9 @@ export default function OnboardingScreen() {
               style={[
                 styles.optionCard,
                 styles.motivationCard,
+                { borderColor: colors.border },
                 isSelected && {
-                  borderColor: Colors.primaryAccentColor,
+                  borderColor: colors.primary,
                 },
               ]}
               onPress={() => toggleMotivation(m.id)}
@@ -404,16 +408,16 @@ export default function OnboardingScreen() {
               <Ionicons
                 name={m.icon as any}
                 size={24}
-                color={isSelected ? Colors.primaryAccentColor : colors.icon}
+                color={isSelected ? colors.primary : colors.icon}
               />
-              <ThemedText
+              <Text
                 style={[
                   styles.optionTitle,
-                  isSelected && { color: Colors.primaryAccentColor },
+                  isSelected && { color: colors.primary },
                 ]}
               >
                 {m.title}
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -423,10 +427,10 @@ export default function OnboardingScreen() {
 
   const renderStep5Interests = () => (
     <View style={styles.stepContainer}>
-      <ThemedText type="title" style={styles.title}>
+      <Text type="title" style={styles.title}>
         What are you interested in?
-      </ThemedText>
-      <ThemedText style={styles.subtitle}>Select all that apply.</ThemedText>
+      </Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Select all that apply.</Text>
 
       <View style={styles.tagsContainer}>
         {INTERESTS.map((i) => {
@@ -437,18 +441,19 @@ export default function OnboardingScreen() {
               key={i}
               style={[
                 styles.tag,
+                { borderColor: colors.border },
                 isSelected && {
-                  backgroundColor: Colors.primaryAccentColor,
-                  borderColor: Colors.primaryAccentColor,
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary,
                 },
               ]}
               onPress={() => toggleInterest(i)}
             >
-              <ThemedText
-                style={[styles.tagText, isSelected && { color: "#FFF" }]}
+              <Text
+                style={[styles.tagText, isSelected && { color: colors.textInverse }]}
               >
                 {i}
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -474,13 +479,13 @@ export default function OnboardingScreen() {
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
           )}
-          <View style={styles.progressBarContainer}>
+          <View style={[styles.progressBarContainer, { backgroundColor: colors.border }]}>
             <View
               style={[
                 styles.progressBar,
                 {
                   width: progressWidth as any,
-                  backgroundColor: Colors.primaryAccentColor,
+                  backgroundColor: colors.primary,
                 },
               ]}
             ></View>
@@ -502,22 +507,23 @@ export default function OnboardingScreen() {
           </Animated.View>
         </View>
 
-        <View style={[styles.footer, { zIndex: 10 }]}>
+        <View style={[styles.footer, { zIndex: 10, borderTopColor: colors.border }]}>
           <TouchableOpacity
             style={[
               styles.continueButton,
               {
                 backgroundColor: isNextEnabled()
-                  ? Colors.primaryAccentColor
-                  : "#E5E7EB",
+                  ? colors.primary
+                  : colors.border,
+                shadowColor: colors.shadow,
               },
             ]}
             onPress={handleContinue}
             disabled={!isNextEnabled()}
           >
-            <ThemedText style={styles.continueButtonText}>
+            <Text style={[styles.continueButtonText, { color: colors.textInverse }]}>
               {step === TOTAL_STEPS - 1 ? "Get Started" : "Continue"}
-            </ThemedText>
+            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -546,7 +552,6 @@ const styles = StyleSheet.create({
   progressBarContainer: {
     flex: 1,
     height: 6,
-    backgroundColor: "#E5E7EB",
     borderRadius: 3,
     overflow: "hidden",
   },
@@ -569,7 +574,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: Colors.subduedTextColor,
     marginBottom: 32,
   },
   input: {
@@ -582,7 +586,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: "#E5E7EB",
   },
   motivationCard: {
     flexDirection: "row",
@@ -596,7 +599,6 @@ const styles = StyleSheet.create({
   },
   optionDescription: {
     fontSize: 14,
-    color: Colors.subduedTextColor,
   },
   tagsContainer: {
     flexDirection: "row",
@@ -609,7 +611,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
   tagText: {
     fontSize: 16,
@@ -618,7 +619,6 @@ const styles = StyleSheet.create({
   footer: {
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
   },
   continueButton: {
     flexDirection: "row",
@@ -627,7 +627,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 30,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
@@ -635,7 +634,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   continueButtonText: {
-    color: "#FFF",
     fontSize: 18,
     fontWeight: "bold",
   },

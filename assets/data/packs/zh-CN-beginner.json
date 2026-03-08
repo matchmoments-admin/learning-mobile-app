@@ -527,6 +527,30 @@
                   }
                 }
               ]
+            },
+            {
+              "id": 13001,
+              "type": "fill_in_blank",
+              "prompt": "Fill in the blank to complete the greeting",
+              "sentence": {
+                "nativeScript": "你___吗？",
+                "romanization": "Nǐ ___ ma?",
+                "translation": "How are you?"
+              },
+              "correctAnswer": "好",
+              "acceptableAnswers": ["好"],
+              "options": ["好", "是", "很", "吗"]
+            },
+            {
+              "id": 13002,
+              "type": "matching",
+              "prompt": "Match each phrase with its meaning",
+              "pairs": [
+                { "id": 1, "left": "你好", "right": "Hello" },
+                { "id": 2, "left": "再见", "right": "Goodbye" },
+                { "id": 3, "left": "谢谢", "right": "Thank you" },
+                { "id": 4, "left": "对不起", "right": "Sorry" }
+              ]
             }
           ]
         },

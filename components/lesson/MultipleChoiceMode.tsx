@@ -1,5 +1,5 @@
 import { SpeakingOption } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
@@ -10,7 +10,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 
 export default function MultipleChoiceMode({
   options,
@@ -27,6 +27,7 @@ export default function MultipleChoiceMode({
   isLoading: boolean;
   showResult: boolean;
 }) {
+  const { colors } = useTheme();
   const { activeLanguage } = useLanguage();
 
   return (
@@ -48,9 +49,9 @@ export default function MultipleChoiceMode({
             ],
           }}
         >
-          <ThemedText type="subtitle" style={styles.sectionTitle}>
+          <Text type="subtitle" style={styles.sectionTitle}>
             Choose your response:
-          </ThemedText>
+          </Text>
         </Animated.View>
         <Animated.View
           style={[
@@ -68,9 +69,9 @@ export default function MultipleChoiceMode({
             },
           ]}
         >
-          <ThemedText type="subtitle" style={styles.sayItPrompt}>
+          <Text type="subtitle" style={[styles.sayItPrompt, { color: colors.primary }]}>
             Now, say it in {activeLanguage.displayName}
-          </ThemedText>
+          </Text>
         </Animated.View>
       </View>
       <ScrollView
@@ -109,11 +110,16 @@ export default function MultipleChoiceMode({
                   styles.optionButton,
                   isSelected && styles.selectedOption,
                   {
-                    backgroundColor: "#ffffff",
+                    backgroundColor: colors.card,
                     borderColor: isSelected
-                      ? Colors.primaryAccentColor
-                      : "#e5e7eb",
+                      ? colors.primary
+                      : colors.border,
                     opacity: isLoading || showResult ? 0.7 : 1,
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: colors.shadow,
+                      },
+                    }),
                   },
                 ]}
                 onPress={() => handleOptionPress(option.id)}
@@ -123,15 +129,15 @@ export default function MultipleChoiceMode({
                 accessibilityState={{ selected: isSelected, disabled: isLoading || showResult }}
               >
                 <View style={styles.optionContent}>
-                  <ThemedText style={styles.optionText}>
+                  <Text style={styles.optionText}>
                     {option.translation}
-                  </ThemedText>
+                  </Text>
                   {isSelected && (
                     <View style={styles.selectedIndicator}>
                       <Ionicons
                         name="mic-outline"
                         size={20}
-                        color={Colors.primaryAccentColor}
+                        color={colors.primary}
                       />
                     </View>
                   )}
@@ -164,7 +170,6 @@ const styles = StyleSheet.create({
   sayItPrompt: {
     fontSize: 18,
     fontWeight: "600",
-    color: Colors.primaryAccentColor,
     textAlign: "center",
   },
   optionsScrollView: {
@@ -183,7 +188,6 @@ const styles = StyleSheet.create({
     overflow: "visible",
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,

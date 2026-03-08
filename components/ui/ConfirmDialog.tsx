@@ -1,7 +1,6 @@
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
+import { Text } from "@/design-system/components/Text";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
-import { ThemedText } from "../themed-text";
-import { ThemedView } from "../themed-view";
 
 export default function ConfirmDialog({
   visible,
@@ -22,6 +21,8 @@ export default function ConfirmDialog({
   onCancel: () => void;
   destructive?: boolean;
 }) {
+  const { colors } = useTheme();
+
   return (
     <Modal
       visible={visible}
@@ -31,40 +32,48 @@ export default function ConfirmDialog({
     >
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} />
-        <ThemedView style={styles.card}>
-          <ThemedText type="defaultSemiBold" style={styles.title}>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <Text type="defaultSemiBold" style={styles.title}>
             {title}
-          </ThemedText>
+          </Text>
           {description ? (
-            <ThemedText style={styles.description}>{description}</ThemedText>
+            <Text style={[styles.description, { opacity: 0.8 }]}>
+              {description}
+            </Text>
           ) : null}
 
           <View style={styles.actions}>
             <Pressable
-              style={[styles.button, styles.cancel]}
+              style={[
+                styles.button,
+                styles.cancel,
+                { backgroundColor: colors.backgroundSecondary },
+              ]}
               onPress={onCancel}
             >
-              <ThemedText type="defaultSemiBold">{cancelLabel}</ThemedText>
+              <Text type="defaultSemiBold">{cancelLabel}</Text>
             </Pressable>
 
             <Pressable
               style={[
                 styles.button,
-                destructive ? styles.destructive : styles.confirm,
+                {
+                  backgroundColor: destructive
+                    ? colors.error
+                    : colors.primary,
+                },
               ]}
               onPress={onConfirm}
             >
-              <ThemedText
-                style={
-                  description ? styles.destructiveText : styles.confirmText
-                }
+              <Text
                 type="defaultSemiBold"
+                color={colors.textInverse}
               >
                 {confirmLabel}
-              </ThemedText>
+              </Text>
             </Pressable>
           </View>
-        </ThemedView>
+        </View>
       </View>
     </Modal>
   );
@@ -86,7 +95,6 @@ const styles = StyleSheet.create({
   },
   description: {
     marginTop: 8,
-    opacity: 0.8,
   },
   actions: {
     flexDirection: "row",
@@ -99,19 +107,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 10,
   },
-  cancel: {
-    backgroundColor: "rgba(0,0,0,0.06)",
-  },
-  confirm: {
-    backgroundColor: Colors.primaryAccentColor,
-  },
-  confirmText: {
-    color: "white",
-  },
-  destructive: {
-    backgroundColor: "#ef4444",
-  },
-  destructiveText: {
-    color: "white",
-  },
+  cancel: {},
 });

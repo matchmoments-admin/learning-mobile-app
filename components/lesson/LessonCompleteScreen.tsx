@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useAccessibility } from "@/ctx/AccessibilityContext";
 import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -12,18 +12,24 @@ import {
   View,
 } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
+import { ScoreBreakdown } from "@/lib/types/scoring";
 import { LessonStats } from "./LessonContent";
 
 export default function LessonCompleteScreen({
   lessonStats,
+  scoreBreakdown,
+  xpEarned,
   onContinue,
   onReview,
 }: {
   lessonStats: LessonStats;
+  scoreBreakdown?: ScoreBreakdown;
+  xpEarned?: number;
   onContinue: () => void;
   onReview: () => void;
 }) {
+  const { colors } = useTheme();
   const { hasRomanization } = useLanguage();
   const { shouldAnimate } = useAccessibility();
   const confettiRef = useRef<any>(null);
@@ -61,10 +67,10 @@ export default function LessonCompleteScreen({
   };
 
   const getPerformanceColor = () => {
-    if (lessonStats.accuracy >= 90) return "#FFD700";
-    if (lessonStats.accuracy >= 75) return "#34C759";
-    if (lessonStats.accuracy >= 60) return Colors.primaryAccentColor;
-    return Colors.subduedTextColor;
+    if (lessonStats.accuracy >= 90) return colors.warning;
+    if (lessonStats.accuracy >= 75) return colors.success;
+    if (lessonStats.accuracy >= 60) return colors.primary;
+    return colors.textSecondary;
   };
 
   return (
@@ -88,18 +94,54 @@ export default function LessonCompleteScreen({
           ]}
         >
           <LinearGradient
-            colors={[Colors.primaryAccentColor, "#ff6b35"]}
-            style={styles.badgeGradient}
+            colors={[colors.primary, "#ff6b35"]}
+            style={[
+              styles.badgeGradient,
+              {
+                shadowColor: colors.primary,
+              },
+            ]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Ionicons name="trophy" size={56} color="#fff" />
+            <Ionicons name="trophy" size={56} color={colors.textInverse} />
           </LinearGradient>
-          <ThemedText style={styles.completeTitle}>Lesson Complete!</ThemedText>
-          <ThemedText style={styles.performanceMessage}>
+          <Text style={styles.completeTitle}>Lesson Complete!</Text>
+          <Text style={styles.performanceMessage}>
             {getPerformanceMessage()}
-          </ThemedText>
+          </Text>
         </Animated.View>
+
+        {/* XP Earned + Star Rating */}
+        {(xpEarned != null && xpEarned > 0 || scoreBreakdown) && (
+          <Animated.View
+            style={[
+              styles.xpStarRow,
+              { opacity: fadeAnim },
+            ]}
+          >
+            {xpEarned != null && xpEarned > 0 && (
+              <View style={[styles.xpBadge, { backgroundColor: colors.warning + "20" }]}>
+                <Ionicons name="star" size={20} color={colors.warning} />
+                <Text style={[styles.xpBadgeText, { color: colors.warning }]}>
+                  +{xpEarned} XP
+                </Text>
+              </View>
+            )}
+            {scoreBreakdown && (
+              <View style={styles.starRow}>
+                {[1, 2, 3].map((i) => (
+                  <Ionicons
+                    key={i}
+                    name={i <= scoreBreakdown.stars ? "star" : "star-outline"}
+                    size={28}
+                    color={colors.warning}
+                  />
+                ))}
+              </View>
+            )}
+          </Animated.View>
+        )}
 
         {/* Accuracy Card */}
         <Animated.View
@@ -107,8 +149,9 @@ export default function LessonCompleteScreen({
             styles.accuracyCard,
             {
               opacity: fadeAnim,
-              backgroundColor: "#ffffff",
-              borderColor: "#e5e7eb",
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              shadowColor: colors.shadow,
             },
           ]}
         >
@@ -125,14 +168,29 @@ export default function LessonCompleteScreen({
             />
           </View>
           <View style={styles.accuracyText}>
-            <ThemedText style={styles.accuracyValue}>
+            <Text style={styles.accuracyValue}>
               {lessonStats.accuracy}%
-            </ThemedText>
-            <ThemedText
-              style={[styles.accuracyLabel, { color: Colors.subduedTextColor }]}
+            </Text>
+            <Text
+              style={[styles.accuracyLabel, { color: colors.textSecondary }]}
             >
               {lessonStats.correctAnswers}/{lessonStats.totalQuestions} correct
-            </ThemedText>
+            </Text>
+            {scoreBreakdown && (
+              <View style={styles.scoreBreakdown}>
+                <Text style={[styles.breakdownItem, { color: colors.textSecondary }]}>
+                  Accuracy: {scoreBreakdown.accuracyScore}/70
+                </Text>
+                {scoreBreakdown.retryPenalty > 0 && (
+                  <Text style={[styles.breakdownItem, { color: colors.error }]}>
+                    Retry penalty: -{scoreBreakdown.retryPenalty}
+                  </Text>
+                )}
+                <Text style={[styles.breakdownItem, { color: colors.text }]}>
+                  Score: {scoreBreakdown.totalScore}/100
+                </Text>
+              </View>
+            )}
           </View>
         </Animated.View>
 
@@ -141,19 +199,19 @@ export default function LessonCompleteScreen({
           lessonStats.wrongQuestions.length > 0 && (
             <Animated.View style={[styles.wrongSection, { opacity: fadeAnim }]}>
               <View style={styles.wrongHeader}>
-                <Ionicons name="alert-circle" size={24} color="#ef4444" />
-                <ThemedText style={styles.wrongTitle}>
+                <Ionicons name="alert-circle" size={24} color={colors.error} />
+                <Text style={styles.wrongTitle}>
                   Questions to Review
-                </ThemedText>
+                </Text>
               </View>
-              <ThemedText
+              <Text
                 style={[
                   styles.wrongSubtitle,
-                  { color: Colors.subduedTextColor },
+                  { color: colors.textSecondary },
                 ]}
               >
                 Focus on these for improvement
-              </ThemedText>
+              </Text>
 
               {lessonStats.wrongQuestions.map((question, index) => (
                 <View
@@ -161,42 +219,43 @@ export default function LessonCompleteScreen({
                   style={[
                     styles.wrongQuestionCard,
                     {
-                      backgroundColor: "#ffffff",
-                      borderColor: "rgba(239, 68, 68, 0.2)",
+                      backgroundColor: colors.card,
+                      borderColor: colors.error + "33",
+                      shadowColor: colors.error,
                     },
                   ]}
                 >
                   <View style={styles.wrongIndicator}>
-                    <Ionicons name="close-circle" size={20} color="#ef4444" />
+                    <Ionicons name="close-circle" size={20} color={colors.error} />
                   </View>
                   <View style={styles.questionContent}>
-                    <ThemedText style={styles.questionTranslation}>
+                    <Text style={styles.questionTranslation}>
                       {question.translation}
-                    </ThemedText>
+                    </Text>
                     <View style={styles.questionPhrase}>
                       {hasRomanization() && question.romanization && (
-                        <ThemedText style={styles.questionRomanization}>
+                        <Text style={styles.questionRomanization}>
                           {question.romanization}
-                        </ThemedText>
+                        </Text>
                       )}
-                      <ThemedText
+                      <Text
                         style={[
                           styles.questionNativeScript,
-                          { color: Colors.subduedTextColor },
+                          { color: colors.textSecondary },
                         ]}
                       >
                         {question.nativeScript}
-                      </ThemedText>
+                      </Text>
                     </View>
                   </View>
                   {question.attempts > 0 && (
-                    <View style={styles.attemptsIndicator}>
-                      <Ionicons name="refresh" size={16} color="#ef4444" />
-                      <ThemedText
-                        style={[styles.attemptsText, { color: "#ef4444" }]}
+                    <View style={[styles.attemptsIndicator, { backgroundColor: colors.errorLight }]}>
+                      <Ionicons name="refresh" size={16} color={colors.error} />
+                      <Text
+                        style={[styles.attemptsText, { color: colors.error }]}
                       >
                         {question.attempts}
-                      </ThemedText>
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -211,37 +270,40 @@ export default function LessonCompleteScreen({
           styles.actionButtons,
           {
             opacity: fadeAnim,
-            backgroundColor: "#ffffff",
-            borderTopColor: "#e5e7eb",
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
           },
         ]}
       >
-        <TouchableOpacity style={styles.primaryButton} onPress={onContinue}>
+        <TouchableOpacity
+          style={[styles.primaryButton, { shadowColor: colors.primary }]}
+          onPress={onContinue}
+        >
           <LinearGradient
-            colors={[Colors.primaryAccentColor, "#ff6b35"]}
+            colors={[colors.primary, "#ff6b35"]}
             style={styles.buttonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
           >
-            <ThemedText style={styles.primaryButtonText}>Continue</ThemedText>
-            <Ionicons name="arrow-forward" size={20} color="#ffffff" />
+            <Text style={[styles.primaryButtonText, { color: colors.textInverse }]}>Continue</Text>
+            <Ionicons name="arrow-forward" size={20} color={colors.textInverse} />
           </LinearGradient>
         </TouchableOpacity>
 
         {lessonStats.wrongQuestions &&
           lessonStats.wrongQuestions.length > 0 && (
             <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: "#e5e7eb" }]}
+              style={[styles.secondaryButton, { borderColor: colors.border }]}
               onPress={onReview}
             >
               <Ionicons
                 name="refresh-outline"
                 size={20}
-                color={Colors.primaryAccentColor}
+                color={colors.primary}
               />
-              <ThemedText style={styles.secondaryButtonText}>
+              <Text style={[styles.secondaryButtonText, { color: colors.primary }]}>
                 Practice Again
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
           )}
       </Animated.View>
@@ -256,7 +318,7 @@ export default function LessonCompleteScreen({
           fallSpeed={4000}
           explosionSpeed={350}
           colors={[
-            Colors.primaryAccentColor,
+            colors.primary,
             "#ff6b35",
             "#FFD700",
             "#34C759",
@@ -298,7 +360,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
-    shadowColor: Colors.primaryAccentColor,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
@@ -314,6 +375,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
+  xpStarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+    marginBottom: 20,
+  },
+  xpBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  xpBadgeText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  starRow: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  scoreBreakdown: {
+    marginTop: 8,
+    gap: 2,
+  },
+  breakdownItem: {
+    fontSize: 13,
+  },
   accuracyCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -321,7 +412,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 2,
     marginBottom: 32,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -371,7 +461,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 2,
     marginBottom: 12,
-    shadowColor: "#ef4444",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -404,7 +493,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
@@ -426,7 +514,6 @@ const styles = StyleSheet.create({
   primaryButton: {
     borderRadius: 20,
     overflow: "hidden",
-    shadowColor: Colors.primaryAccentColor,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -443,7 +530,6 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#fff",
   },
   secondaryButton: {
     flexDirection: "row",
@@ -458,6 +544,5 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.primaryAccentColor,
   },
 });

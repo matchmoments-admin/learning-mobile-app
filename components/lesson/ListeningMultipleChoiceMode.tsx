@@ -1,5 +1,5 @@
 import { ListeningOption } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import {
   Platform,
   Pressable,
@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 
 export default function ListeningMultipleChoiceMode({
   options,
@@ -22,12 +22,14 @@ export default function ListeningMultipleChoiceMode({
   isLoading: boolean;
   showResult: boolean;
 }) {
+  const { colors } = useTheme();
+
   return (
     <View style={{ flex: 1 }}>
       <View style={styles.promptContainer}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>
+        <Text type="subtitle" style={styles.sectionTitle}>
           What did you just hear?
-        </ThemedText>
+        </Text>
       </View>
       <ScrollView
         style={styles.optionsScrollView}
@@ -45,12 +47,17 @@ export default function ListeningMultipleChoiceMode({
                 styles.optionButton,
                 isSelected && styles.selectedOption,
                 {
-                  backgroundColor: "#ffffff",
+                  backgroundColor: colors.card,
                   borderColor: isSelected
-                    ? Colors.primaryAccentColor
-                    : "#e5e7eb",
+                    ? colors.primary
+                    : colors.border,
                   opacity: isLoading || showResult ? 0.7 : 1,
                   marginBottom: 16,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: colors.shadow,
+                    },
+                  }),
                 },
               ]}
               onPress={() => handleOptionPress(option.id)}
@@ -59,9 +66,9 @@ export default function ListeningMultipleChoiceMode({
               accessibilityLabel={`Answer option: ${option.translation}`}
               accessibilityState={{ selected: isSelected, disabled: isLoading || showResult }}
             >
-              <ThemedText style={styles.optionText}>
+              <Text style={styles.optionText}>
                 {option.translation}
-              </ThemedText>
+              </Text>
             </Pressable>
           );
         })}
@@ -95,7 +102,6 @@ const styles = StyleSheet.create({
     overflow: "visible",
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,

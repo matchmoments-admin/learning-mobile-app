@@ -1,7 +1,7 @@
 import { Paywall } from "@/components/subscription/Paywall";
-import { ThemedText } from "@/components/themed-text";
 import { Chapter, Lesson } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { Text } from "@/design-system/components/Text";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useAuth } from "@/ctx/AuthContext";
 import { useLanguage } from "@/ctx/LanguageContext";
 import { useSpeakingListningStats } from "@/hooks/useSpeakingListeningStats";
@@ -10,14 +10,14 @@ import { getAllProgress } from "@/lib/services/progress-service";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const MAX_STARS = 3;
 
 export default function LessonsContent() {
-  const colors = Colors["light"];
+  const { colors } = useTheme();
   const { stats, loading, refresh } = useSpeakingListningStats();
   const { activePack } = useLanguage();
   const { user, isPremium } = useAuth();
@@ -76,7 +76,7 @@ export default function LessonsContent() {
           key={`start-${i}`}
           name={i <= starsToDisplay ? "star" : "star-outline"}
           size={16}
-          color={i <= starsToDisplay ? "#FFD700" : Colors.subduedTextColor}
+          color={i <= starsToDisplay ? colors.warning : colors.textSecondary}
           style={styles.starIcon}
         />,
       );
@@ -85,12 +85,12 @@ export default function LessonsContent() {
     if (count > MAX_STARS) {
       const extraCount = count - MAX_STARS;
       elements.push(
-        <ThemedText
+        <Text
           key="extra-count"
-          style={[styles.extraCountText, { color: Colors.subduedTextColor }]}
+          style={[styles.extraCountText, { color: colors.textSecondary }]}
         >
           +{extraCount}
-        </ThemedText>,
+        </Text>,
       );
     }
 
@@ -118,11 +118,12 @@ export default function LessonsContent() {
             {
               backgroundColor: colors.background,
               borderColor: locked
-                ? Colors.borderColor
+                ? colors.border
                 : isMastered
-                  ? Colors.primaryAccentColor
-                  : Colors.borderColor,
+                  ? colors.primary
+                  : colors.border,
               opacity: locked ? 0.6 : 1,
+              shadowColor: colors.shadow,
             },
           ]}
           onPress={() => handleLessonPress(lesson, chapterIndex)}
@@ -130,10 +131,10 @@ export default function LessonsContent() {
           <Ionicons
             name={locked ? "lock-closed" : lesson.icon}
             size={28}
-            color={locked ? Colors.subduedTextColor : Colors.primaryAccentColor}
+            color={locked ? colors.textSecondary : colors.primary}
           />
           <View style={styles.lessonTextContainer}>
-            <ThemedText style={styles.lessonTitle}>{lesson.title}</ThemedText>
+            <Text style={styles.lessonTitle}>{lesson.title}</Text>
             {!locked && renderCompletionStatus(completionCount)}
           </View>
         </TouchableOpacity>
@@ -148,72 +149,72 @@ export default function LessonsContent() {
     >
       <View style={styles.container}>
         <View
-          style={[styles.header, { borderBottomColor: Colors.borderColor }]}
+          style={[styles.header, { borderBottomColor: colors.border }]}
         >
           <TouchableOpacity>
-            <ThemedText style={styles.headerTitle}>This week</ThemedText>
-            <ThemedText
+            <Text style={styles.headerTitle}>This week</Text>
+            <Text
               style={[
                 styles.headerSubtitle,
-                { color: Colors.subduedTextColor },
+                { color: colors.textSecondary },
               ]}
             >
               In reviews
-            </ThemedText>
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.statItem}>
               <View style={styles.statValueContainer}>
-                <ThemedText style={styles.statValue}>
+                <Text style={styles.statValue}>
                   {loading ? "-" : Math.floor(stats?.minutesSpoken ?? 0)}
-                </ThemedText>
+                </Text>
                 <Ionicons
                   name="arrow-up"
                   size={14}
-                  color="#34C759"
+                  color={colors.success}
                   style={{ marginLeft: 2 }}
                 />
-                <ThemedText style={styles.statChangePositive}>
+                <Text style={[styles.statChangePositive, { color: colors.success }]}>
                   {Math.floor(stats?.weeklyChange.spoken ?? 0)}
-                </ThemedText>
+                </Text>
               </View>
-              <ThemedText
-                style={[styles.statLabel, { color: Colors.subduedTextColor }]}
+              <Text
+                style={[styles.statLabel, { color: colors.textSecondary }]}
               >
                 minutes spoken
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
           </View>
 
           <View
             style={[
               styles.headerSeparator,
-              { backgroundColor: Colors.borderColor },
+              { backgroundColor: colors.border },
             ]}
           />
 
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.statItem}>
               <View style={styles.statValueContainer}>
-                <ThemedText style={styles.statValue}>
+                <Text style={styles.statValue}>
                   {loading ? "-" : Math.floor(stats?.minutesListened ?? 0)}
-                </ThemedText>
+                </Text>
                 <Ionicons
                   name="arrow-up"
                   size={14}
-                  color="#34C759"
+                  color={colors.success}
                   style={{ marginLeft: 2 }}
                 />
-                <ThemedText style={styles.statChangePositive}>
+                <Text style={[styles.statChangePositive, { color: colors.success }]}>
                   {Math.floor(stats?.weeklyChange.listened ?? 0)}
-                </ThemedText>
+                </Text>
               </View>
-              <ThemedText
-                style={[styles.statLabel, { color: Colors.subduedTextColor }]}
+              <Text
+                style={[styles.statLabel, { color: colors.textSecondary }]}
               >
                 minutes listened
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -226,19 +227,19 @@ export default function LessonsContent() {
           {/* Premium upsell banner */}
           {!isPremium && (
             <TouchableOpacity
-              style={styles.premiumBanner}
+              style={[styles.premiumBanner, { backgroundColor: colors.primary, shadowColor: colors.shadow }]}
               onPress={() => setPaywallVisible(true)}
             >
-              <Ionicons name="star" size={20} color="#FFF" />
+              <Ionicons name="star" size={20} color={colors.textInverse} />
               <View style={styles.premiumBannerText}>
-                <Text style={styles.premiumBannerTitle}>
+                <Text style={[styles.premiumBannerTitle, { color: colors.textInverse }]}>
                   Unlock all 12 chapters
                 </Text>
-                <Text style={styles.premiumBannerSubtitle}>
+                <Text style={[styles.premiumBannerSubtitle, { color: colors.textInverse }]}>
                   Start your free 7-day trial
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#FFF" />
+              <Ionicons name="chevron-forward" size={20} color={colors.textInverse} />
             </TouchableOpacity>
           )}
 
@@ -251,23 +252,23 @@ export default function LessonsContent() {
               <View key={chapter.id} style={styles.chapterContainer}>
                 <View style={styles.chapterHeader}>
                   <View style={styles.chapterHeaderRow}>
-                    <Text style={styles.chapterNumberText}>
+                    <Text style={[styles.chapterNumberText, { color: colors.textSecondary }]}>
                       CHAPTER {chapter.id}
                     </Text>
                     {locked && (
-                      <View style={styles.premiumBadge}>
+                      <View style={[styles.premiumBadge, { backgroundColor: colors.primary }]}>
                         <Ionicons
                           name="lock-closed"
                           size={10}
-                          color="#FFF"
+                          color={colors.textInverse}
                         />
-                        <Text style={styles.premiumBadgeText}>PREMIUM</Text>
+                        <Text style={[styles.premiumBadgeText, { color: colors.textInverse }]}>PREMIUM</Text>
                       </View>
                     )}
                   </View>
-                  <ThemedText type="title" style={styles.chapterTitleText}>
+                  <Text type="title" style={styles.chapterTitleText}>
                     {chapter.title}
-                  </ThemedText>
+                  </Text>
                 </View>
 
                 <View style={styles.lessonsWrapper}>
@@ -282,8 +283,9 @@ export default function LessonsContent() {
                       styles.practiceChapterButton,
                       {
                         backgroundColor: locked
-                          ? Colors.subduedTextColor
-                          : Colors.primaryAccentColor,
+                          ? colors.textSecondary
+                          : colors.primary,
+                        shadowColor: colors.shadow,
                       },
                     ]}
                     onPress={() =>
@@ -293,13 +295,13 @@ export default function LessonsContent() {
                     <Ionicons
                       name={locked ? "lock-closed" : "flash"}
                       size={20}
-                      color="#FFF"
+                      color={colors.textInverse}
                     />
-                    <ThemedText style={styles.practiceChapterButtonText}>
+                    <Text style={[styles.practiceChapterButtonText, { color: colors.textInverse }]}>
                       {locked
                         ? "Unlock to review"
                         : `Review '${chapter.title}'`}
-                    </ThemedText>
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -356,7 +358,6 @@ const styles = StyleSheet.create({
   statChangePositive: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#34C759",
   },
   statLabel: {
     fontSize: 11,
@@ -382,7 +383,6 @@ const styles = StyleSheet.create({
   chapterNumberText: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#8e8e93",
     textTransform: "uppercase",
   },
   chapterTitleText: {
@@ -404,7 +404,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     width: "80%",
     gap: 16,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -434,13 +433,11 @@ const styles = StyleSheet.create({
   premiumBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.primaryAccentColor,
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 16,
     marginBottom: 24,
     gap: 12,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
@@ -452,11 +449,9 @@ const styles = StyleSheet.create({
   premiumBannerTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#FFF",
   },
   premiumBannerSubtitle: {
     fontSize: 13,
-    color: "rgba(255, 255, 255, 0.9)",
     marginTop: 2,
   },
   chapterHeaderRow: {
@@ -467,7 +462,6 @@ const styles = StyleSheet.create({
   premiumBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.primaryAccentColor,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -476,7 +470,6 @@ const styles = StyleSheet.create({
   premiumBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#FFF",
     letterSpacing: 0.5,
   },
   practiceChapterButton: {
@@ -490,14 +483,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 24,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
     elevation: 6,
   },
   practiceChapterButtonText: {
-    color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
   },

@@ -1,5 +1,5 @@
 import { Term } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useAccessibility } from "@/ctx/AccessibilityContext";
 import { useLanguage } from "@/ctx/LanguageContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -19,7 +19,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 
 interface TooltipState {
   visible: boolean;
@@ -49,6 +49,7 @@ export default function SentenceBreakdownCard({
   };
   disabled?: boolean;
 }) {
+  const { colors } = useTheme();
   const { activeLanguage, hasRomanization: hasRoman, getNativeScriptLabel, getRomanizationLabel } = useLanguage();
   const { preferences } = useAccessibility();
   const insets = useSafeAreaInsets();
@@ -172,17 +173,21 @@ export default function SentenceBreakdownCard({
             }}
             onPress={() => showTooltip(word, type, index)}
           >
-            <ThemedText
+            <Text
               style={[
-                type === "nativeScript" ? styles.nativeScriptValue : styles.romanizationValue,
+                type === "nativeScript"
+                  ? [styles.nativeScriptValue, { color: colors.text }]
+                  : [styles.romanizationValue, { color: colors.text }],
                 selectedWord &&
                   selectedWord.type === type &&
-                  selectedWord.index === index &&
-                  styles.selectedWord,
+                  selectedWord.index === index && [
+                    styles.selectedWord,
+                    { textDecorationColor: colors.primary },
+                  ],
               ]}
             >
               {type === "nativeScript" ? word.nativeScript : word.romanization}{" "}
-            </ThemedText>
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -199,6 +204,9 @@ export default function SentenceBreakdownCard({
           height: CARD_MAX_HEIGHT + insets.bottom,
           paddingBottom: insets.bottom,
           opacity: disabled ? 0.6 : 1,
+          backgroundColor: colors.background,
+          borderColor: colors.border,
+          shadowColor: colors.shadow,
         },
         animatedStyle,
       ]}
@@ -214,42 +222,48 @@ export default function SentenceBreakdownCard({
           }}
           style={styles.handleContainer}
         >
-          <View style={styles.handle}></View>
+          <View style={[styles.handle, { backgroundColor: colors.border }]}></View>
         </Pressable>
 
         <View style={styles.peekContent}>
-          <Ionicons name="help-circle-outline" size={24} color="#9ca3af" />
-          <ThemedText style={styles.peekText}>
+          <Ionicons name="help-circle-outline" size={24} color={colors.textTertiary} />
+          <Text style={[styles.peekText, { color: colors.textSecondary }]}>
             Swipe up for detailed help
-          </ThemedText>
+          </Text>
         </View>
 
         <ScrollView
           style={styles.fullContent}
           showsVerticalScrollIndicator={false}
         >
-          <ThemedText style={styles.title}>Sentence Breakdown</ThemedText>
+          <Text style={[styles.title, { color: colors.text }]}>Sentence Breakdown</Text>
 
           <View style={styles.wordHintContainer}>
-            <ThemedText style={styles.wordHintText}>
+            <Text style={[styles.wordHintText, { color: colors.textSecondary }]}>
               Tap any word to see its meaning
-            </ThemedText>
+            </Text>
           </View>
 
           {hasRoman() && sentence.romanization && (
             <View style={styles.breakdownItem}>
               <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <ThemedText style={styles.label}>{romanizationLabel}:</ThemedText>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{romanizationLabel}:</Text>
                 <Pressable
                   onPress={playAudio}
                   disabled={disabled}
-                  style={styles.playButton}
+                  style={[
+                    styles.playButton,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.primaryLight,
+                    },
+                  ]}
                   hitSlop={8}
                 >
                   <Ionicons
                     name={isPlaying ? "pause" : "play"}
                     size={20}
-                    color={Colors.primaryAccentColor}
+                    color={colors.primary}
                   />
                 </Pressable>
               </View>
@@ -258,18 +272,24 @@ export default function SentenceBreakdownCard({
           )}
           <View style={styles.breakdownItem}>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <ThemedText style={styles.label}>{nativeScriptLabel}:</ThemedText>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{nativeScriptLabel}:</Text>
               {!hasRoman() && (
                 <Pressable
                   onPress={playAudio}
                   disabled={disabled}
-                  style={styles.playButton}
+                  style={[
+                    styles.playButton,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.primaryLight,
+                    },
+                  ]}
                   hitSlop={8}
                 >
                   <Ionicons
                     name={isPlaying ? "pause" : "play"}
                     size={20}
-                    color={Colors.primaryAccentColor}
+                    color={colors.primary}
                   />
                 </Pressable>
               )}
@@ -277,16 +297,16 @@ export default function SentenceBreakdownCard({
             {renderInteractiveSentence("nativeScript")}
           </View>
           <View style={styles.breakdownItem}>
-            <ThemedText style={styles.label}>Translation:</ThemedText>
-            <ThemedText style={styles.translationValue}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Translation:</Text>
+            <Text style={[styles.translationValue, { color: colors.text }]}>
               {sentence.translation}
-            </ThemedText>
+            </Text>
           </View>
           <View style={styles.breakdownItem}>
-            <ThemedText style={styles.label}>Breakdown:</ThemedText>
-            <ThemedText style={styles.breakdownText}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Breakdown:</Text>
+            <Text style={[styles.breakdownText, { color: colors.text }]}>
               {sentence.breakdown}
-            </ThemedText>
+            </Text>
           </View>
         </ScrollView>
       </Pressable>
@@ -304,13 +324,15 @@ export default function SentenceBreakdownCard({
                   SCREEN_WIDTH - tooltipWidthRef.current - 8,
                 ),
               ),
+              backgroundColor: colors.backgroundSecondary,
+              borderColor: colors.border,
             },
           ]}
           onLayout={(e) => {
             tooltipWidthRef.current = e.nativeEvent.layout.width;
           }}
         >
-          <ThemedText style={styles.tooltipText}>{tooltip.text}</ThemedText>
+          <Text style={[styles.tooltipText, { color: colors.text }]}>{tooltip.text}</Text>
         </View>
       )}
     </Animated.View>
@@ -329,12 +351,9 @@ const styles = StyleSheet.create({
     bottom: -CARD_MIN_HEIGHT,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderTopWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
@@ -349,7 +368,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: "#e5e7eb",
   },
   peekContent: {
     flexDirection: "row",
@@ -360,7 +378,6 @@ const styles = StyleSheet.create({
   peekText: {
     marginLeft: 8,
     fontSize: 16,
-    color: Colors.subduedTextColor,
     fontWeight: "500",
   },
   fullContent: {
@@ -370,7 +387,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#1c1c1e",
     marginBottom: 5,
   },
   breakdownItem: {
@@ -378,7 +394,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    color: Colors.subduedTextColor,
     textTransform: "uppercase",
   },
   interactiveSentenceContainer: {
@@ -388,38 +403,31 @@ const styles = StyleSheet.create({
   },
   romanizationValue: {
     fontSize: 18,
-    color: "#1c1c1e",
     fontWeight: "600",
     lineHeight: 30,
   },
   nativeScriptValue: {
     fontSize: 22,
-    color: "#1c1c1e",
     lineHeight: 34,
   },
   translationValue: {
     fontSize: 18,
-    color: "#1c1c1e",
     lineHeight: 26,
   },
   breakdownText: {
     fontSize: 16,
-    color: "#1c1c1e",
     lineHeight: 24,
   },
   tooltipContainer: {
     position: "absolute",
-    backgroundColor: "#f3f4f6",
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
     alignItems: "center",
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
   },
   tooltipText: {
-    color: "#1c1c1e",
     fontSize: 14,
     textAlign: "center",
   },
@@ -429,7 +437,6 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     paddingHorizontal: 2,
     textDecorationLine: "underline",
-    textDecorationColor: Colors.primaryAccentColor,
     textDecorationStyle: "solid",
   },
   wordHintContainer: {
@@ -437,16 +444,13 @@ const styles = StyleSheet.create({
   },
   wordHintText: {
     fontSize: 13,
-    color: Colors.subduedTextColor,
     fontStyle: "italic",
   },
   playButton: {
     marginLeft: 12,
-    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 4,
     borderWidth: 1,
-    borderColor: "#ffe0d2",
     justifyContent: "center",
     alignItems: "center",
   },

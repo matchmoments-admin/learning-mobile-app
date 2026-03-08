@@ -1,9 +1,11 @@
 import { ConversationScenario } from "@/constants/ContentTypes";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/design-system/ThemeProvider";
 import { useAccessibility } from "@/ctx/AccessibilityContext";
 import { useLanguage } from "@/ctx/LanguageContext";
 import { recordConversationTurn } from "@/lib/services/stats-service";
 import { logLearningEvent, EVENTS } from "@/lib/services/event-service";
+import { awardXp } from "@/lib/services/xp-service";
+import { recordActivity } from "@/lib/services/streak-service";
 import { useAuth } from "@/ctx/AuthContext";
 import { supabase } from "@/utils/supabase";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -26,7 +28,7 @@ import ConfettiCannon from "react-native-confetti-cannon";
 import { ScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
-import { ThemedText } from "../themed-text";
+import { Text } from "@/design-system/components/Text";
 
 interface Message {
   id: string;
@@ -44,6 +46,7 @@ export default function ConversationMode({
   scenario: ConversationScenario;
   onExit: () => void;
 }) {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { activeLanguage, hasRomanization, getNativeScriptLabel, getRomanizationLabel } = useLanguage();
   const { user } = useAuth();
@@ -173,6 +176,8 @@ export default function ConversationMode({
     });
 
     if (data.conversationComplete) {
+      void awardXp("conversation_complete", user?.id);
+      void recordActivity(user?.id);
       setTimeout(() => {
         setConversationComplete(true);
         setTimeout(() => {
@@ -364,7 +369,7 @@ export default function ConversationMode({
   return (
     <>
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: Colors.light.background }}
+        style={{ flex: 1, backgroundColor: colors.background }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {/* Header */}
@@ -373,20 +378,20 @@ export default function ConversationMode({
             styles.header,
             {
               paddingTop: insets.top,
-              borderBottomColor: Colors.light.icon + "20",
+              borderBottomColor: colors.icon + "20",
             },
           ]}
         >
           <TouchableOpacity onPress={onExit} style={styles.backButton}>
-            <Ionicons name="close" size={24} color={Colors.light.text} />
+            <Ionicons name="close" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <ThemedText type="defaultSemiBold">{scenario.title}</ThemedText>
-            <ThemedText
-              style={{ fontSize: 12, color: Colors.subduedTextColor }}
+            <Text type="defaultSemiBold">{scenario.title}</Text>
+            <Text
+              style={{ fontSize: 12, color: colors.textSecondary }}
             >
               Goal: {scenario.goal}
-            </ThemedText>
+            </Text>
           </View>
           <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
             {hasRomanization() && (
@@ -395,21 +400,21 @@ export default function ConversationMode({
                 accessibilityRole="button"
                 accessibilityLabel={showRomanization ? "Hide romanization" : "Show romanization"}
               >
-                <ThemedText
+                <Text
                   style={{
                     fontSize: 16,
                     fontWeight: "bold",
-                    color: Colors.primaryAccentColor,
+                    color: colors.primary,
                   }}
                 >
                   {toggleLabel}
-                </ThemedText>
+                </Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={() => setIsBlurred(!isBlurred)}>
               <Ionicons
                 size={24}
-                color={Colors.light.text}
+                color={colors.text}
                 name={isBlurred ? "eye-off" : "eye"}
               />
             </TouchableOpacity>
@@ -440,30 +445,30 @@ export default function ConversationMode({
                   isUser
                     ? {
                         alignSelf: "flex-end",
-                        backgroundColor: Colors.primaryAccentColor,
+                        backgroundColor: colors.primary,
                       }
                     : {
                         alignSelf: "flex-start",
-                        backgroundColor: Colors.light.text + "10",
+                        backgroundColor: colors.text + "10",
                       },
                 ]}
               >
-                <ThemedText
+                <Text
                   style={{
                     color: isUser
-                      ? "white"
+                      ? colors.textInverse
                       : isBlurred && !isUser
                         ? "transparent"
-                        : Colors.light.text,
+                        : colors.text,
                     backgroundColor:
                       isBlurred && !isUser
-                        ? Colors.light.text + "20"
+                        ? colors.text + "20"
                         : undefined,
                     borderRadius: 4,
                   }}
                 >
                   {content}
-                </ThemedText>
+                </Text>
                 {!isUser && (
                   <TouchableOpacity
                     style={styles.audioButton}
@@ -474,7 +479,7 @@ export default function ConversationMode({
                     <Ionicons
                       name="volume-high"
                       size={16}
-                      color={Colors.light.text}
+                      color={colors.text}
                     />
                   </TouchableOpacity>
                 )}
@@ -487,14 +492,14 @@ export default function ConversationMode({
                 styles.messageBubble,
                 {
                   alignSelf: "flex-start",
-                  backgroundColor: Colors.light.text + "10",
+                  backgroundColor: colors.text + "10",
                   minWidth: 60,
                   alignItems: "center",
                   justifyContent: "center",
                 },
               ]}
             >
-              <ActivityIndicator color={Colors.light.text} size="small" />
+              <ActivityIndicator color={colors.text} size="small" />
             </View>
           )}
         </ScrollView>
@@ -505,33 +510,34 @@ export default function ConversationMode({
             styles.inputContainer,
             {
               paddingBottom: insets.bottom + 10,
-              borderTopColor: Colors.light.icon + "20",
+              borderTopColor: colors.icon + "20",
             },
           ]}
         >
           <TouchableOpacity
             style={[
               styles.micButton,
-              isRecording && { backgroundColor: "#ff4444" },
+              { backgroundColor: colors.primary },
+              isRecording && { backgroundColor: colors.error },
             ]}
             onPress={handleRecordToggle}
           >
             <Ionicons
               size={24}
-              color="white"
+              color={colors.textInverse}
               name={isRecording ? "stop" : "mic"}
             />
           </TouchableOpacity>
           <View
             style={[
               styles.textInputWrapper,
-              { backgroundColor: Colors.light.text + "10" },
+              { backgroundColor: colors.text + "10" },
             ]}
           >
             <TextInput
-              style={[styles.textInput, { color: Colors.light.text }]}
+              style={[styles.textInput, { color: colors.text }]}
               placeholder="Type a message..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={colors.textTertiary}
               value={inputText}
               onChangeText={setInputText}
               multiline
@@ -541,16 +547,16 @@ export default function ConversationMode({
           </View>
           <TouchableOpacity
             onPress={handleSend}
-            style={[styles.sendButton, !inputText.trim() && { opacity: 0.5 }]}
+            style={[styles.sendButton, { backgroundColor: colors.primary }, !inputText.trim() && { opacity: 0.5 }]}
             disabled={!inputText.trim() || isLoading}
             accessibilityRole="button"
             accessibilityLabel="Send message"
             accessibilityState={{ disabled: !inputText.trim() || isLoading }}
           >
             {isLoading ? (
-              <ActivityIndicator color="white" size="small" />
+              <ActivityIndicator color={colors.textInverse} size="small" />
             ) : (
-              <Ionicons name="arrow-up" size={20} color="white" />
+              <Ionicons name="arrow-up" size={20} color={colors.textInverse} />
             )}
           </TouchableOpacity>
         </View>
@@ -567,35 +573,36 @@ export default function ConversationMode({
             style={[
               styles.completeModal,
               {
-                backgroundColor: "#ffffff",
+                backgroundColor: colors.card,
+                shadowColor: colors.shadow,
                 transform: [{ scale: scaleAnim }],
                 opacity: fadeAnim,
               },
             ]}
           >
-            <View style={styles.completeIconContainer}>
+            <View style={[styles.completeIconContainer, { backgroundColor: colors.primaryLight }]}>
               <Ionicons
                 name="trophy"
                 size={56}
-                color={Colors.primaryAccentColor}
+                color={colors.primary}
               />
             </View>
-            <ThemedText style={styles.completeTitle}>
+            <Text style={styles.completeTitle}>
               Conversation Complete!
-            </ThemedText>
-            <ThemedText style={styles.completeSubtitle}>
+            </Text>
+            <Text style={[styles.completeSubtitle, { color: colors.textSecondary }]}>
               Great job! You successfully completed the conversation.
-            </ThemedText>
+            </Text>
             <TouchableOpacity
               onPress={() => {
                 setConversationComplete(false);
                 onExit();
               }}
-              style={styles.completeButton}
+              style={[styles.completeButton, { backgroundColor: colors.primary }]}
             >
-              <ThemedText style={styles.completeButtonText}>
+              <Text style={[styles.completeButtonText, { color: colors.textInverse }]}>
                 Continue
-              </ThemedText>
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -610,10 +617,10 @@ export default function ConversationMode({
             fallSpeed={4000}
             explosionSpeed={350}
             colors={[
-              Colors.primaryAccentColor,
+              colors.primary,
               "#ff6b35",
               "#FFD700",
-              "#34C759",
+              colors.success,
               "#FF9F0A",
             ]}
           />
@@ -667,7 +674,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primaryAccentColor,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -690,7 +696,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primaryAccentColor,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -707,7 +712,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
     maxWidth: 400,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -717,7 +721,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: `${Colors.primaryAccentColor}20`,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 24,
@@ -730,12 +733,10 @@ const styles = StyleSheet.create({
   },
   completeSubtitle: {
     fontSize: 16,
-    color: Colors.subduedTextColor,
     textAlign: "center",
     marginBottom: 32,
   },
   completeButton: {
-    backgroundColor: Colors.primaryAccentColor,
     paddingHorizontal: 48,
     paddingVertical: 16,
     borderRadius: 12,
@@ -743,7 +744,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   completeButtonText: {
-    color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },

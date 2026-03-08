@@ -1,11 +1,7 @@
-import { Colors } from "@/constants/theme";
-import {
-  EBGaramond_500Medium_Italic,
-  useFonts,
-} from "@expo-google-fonts/eb-garamond";
+import { useTheme } from "@/design-system/ThemeProvider";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Fontisto from "@expo/vector-icons/Fontisto";
-import { useVideoPlayer, VideoView } from "expo-video";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
   Dimensions,
@@ -32,7 +28,6 @@ import { verticalScale } from "react-native-size-matters";
 import EmailAuth from "./EmailAuth";
 
 const { width, height } = Dimensions.get("window");
-const videoSource = require("../../assets/videos/broll.mp4");
 // TODO: Replace with Lumora logo asset when available
 const logoSource = require("../../assets/images/convo-minimal.png");
 
@@ -41,6 +36,7 @@ const PEEK_MENU_HEIGHT = 50;
 const CLOSED_POSITION = MENU_HEIGHT - PEEK_MENU_HEIGHT;
 
 export default function IntroScreen() {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const mainTextOpacity = useSharedValue(0);
@@ -51,10 +47,6 @@ export default function IntroScreen() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState<"login" | "email">("login");
 
-  const [fontsLoaded] = useFonts({
-    EBGaramond_500Medium_Italic,
-  });
-
   const mainTextWords: string[] = ["Learn", "anything.", "Your", "way."];
   const scriptPhrases: string[] = [
     "Speaking",
@@ -62,12 +54,6 @@ export default function IntroScreen() {
     "Practising",
     "Conversing",
   ];
-
-  const player = useVideoPlayer(videoSource, (player) => {
-    player.loop = true;
-    player.muted = true;
-    player.play();
-  });
 
   const mainTextAnimatedStyle = useAnimatedStyle(() => {
     const translateY = interpolate(
@@ -169,8 +155,6 @@ export default function IntroScreen() {
   };
 
   useEffect(() => {
-    player.play();
-
     const timeout = setTimeout(() => {
       animateTextIn();
     }, 300);
@@ -234,10 +218,6 @@ export default function IntroScreen() {
       keyboardWillHideListener?.remove();
     };
   }, []);
-
-  if (!fontsLoaded) {
-    return null;
-  }
 
   const renderLoginView = () => (
     <Animated.View style={[styles.viewContainer, menuContentAnimatedStyle]}>
@@ -304,19 +284,11 @@ export default function IntroScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
-      <VideoView
-        nativeControls={false}
-        player={player}
-        style={[StyleSheet.absoluteFill, { width, height }]}
-        contentFit="cover"
-      />
-
-      {/* Overlay */}
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: "rgba(0, 0, 0, 0.4)", zIndex: 20 },
-        ]}
+      <LinearGradient
+        colors={["#1a1a2e", "#16213e", "#0f3460"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
       />
 
       {/* Hero Text Section */}
@@ -328,7 +300,7 @@ export default function IntroScreen() {
         </Animated.View>
 
         <Animated.View style={scriptTextAnimatedStyle}>
-          <Text style={styles.heroTextScript}>
+          <Text style={[styles.heroTextScript, { color: colors.primary }]}>
             {scriptPhrases[currentPhraseIndex]}
           </Text>
         </Animated.View>
@@ -471,8 +443,7 @@ const styles = StyleSheet.create({
   },
   heroTextScript: {
     fontSize: verticalScale(55),
-    fontFamily: "EBGaramond_500Medium_Italic",
-    color: Colors.primaryAccentColor,
+    fontFamily: "PlusJakartaSans_600SemiBold",
     letterSpacing: 0.5,
   },
 });
