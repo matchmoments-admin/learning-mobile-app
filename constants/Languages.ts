@@ -46,7 +46,7 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
     scriptType: "latin",
     writingDirection: "ltr",
     ttsCode: "es-ES",
-    hasContent: false,
+    hasContent: true,
     renderingConfig: {
       showRomanization: false,
       primaryScriptLabel: "Spanish",
@@ -60,7 +60,7 @@ export const LANGUAGES: Record<string, LanguageConfig> = {
     scriptType: "devanagari",
     writingDirection: "ltr",
     ttsCode: "hi-IN",
-    hasContent: false,
+    hasContent: true,
     renderingConfig: {
       showRomanization: true,
       romanizationLabel: "IAST",

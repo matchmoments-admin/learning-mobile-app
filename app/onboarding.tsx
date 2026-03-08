@@ -4,6 +4,8 @@ import { useTheme } from "@/design-system/ThemeProvider";
 import { LANGUAGES } from "@/constants/Languages";
 import { useAuth } from "@/ctx/AuthContext";
 import { useLanguage } from "@/ctx/LanguageContext";
+import { canAccessCourse } from "@/lib/services/access-service";
+import { getBundledPacks } from "@/lib/services/content-pack-service";
 import { supabase } from "@/utils/supabase";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
@@ -51,12 +53,14 @@ const SUBJECTS = [
   },
 ];
 
-const LANGUAGE_OPTIONS = Object.values(LANGUAGES).map((lang) => ({
-  id: lang.code,
-  title: lang.displayName,
-  nativeName: lang.nativeName,
-  hasContent: lang.hasContent,
-}));
+const LANGUAGE_OPTIONS = Object.values(LANGUAGES)
+  .filter((lang) => lang.hasContent)
+  .map((lang, index) => ({
+    id: lang.code,
+    title: lang.displayName,
+    nativeName: lang.nativeName,
+    courseIndex: index,
+  }));
 
 const LEVELS = [
   {
@@ -130,7 +134,8 @@ export default function OnboardingScreen() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [showPaywall, setShowPaywall] = useState(false);
 
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, isPremium } = useAuth();
+  const [languagePaywallVisible, setLanguagePaywallVisible] = useState(false);
 
   const handleBack = () => {
     if (step > 0) {
@@ -252,6 +257,7 @@ export default function OnboardingScreen() {
           <TouchableOpacity
             key={s.id}
             disabled={s.disabled}
+            activeOpacity={s.disabled ? 1 : 0.2}
             style={[
               styles.optionCard,
               styles.motivationCard,
@@ -261,7 +267,10 @@ export default function OnboardingScreen() {
               },
               s.disabled && { opacity: 0.5 },
             ]}
-            onPress={() => setSelectedSubject(s.id)}
+            onPress={() => {
+              if (s.disabled) return;
+              setSelectedSubject(s.id);
+            }}
           >
             <Ionicons
               name={s.icon as any}
@@ -293,6 +302,16 @@ export default function OnboardingScreen() {
     </View>
   );
 
+  const handleLanguageSelect = (lang: typeof LANGUAGE_OPTIONS[number]) => {
+    const needsPremium = !canAccessCourse(lang.courseIndex, isPremium);
+    if (needsPremium) {
+      setSelectedLanguage(lang.id);
+      setLanguagePaywallVisible(true);
+    } else {
+      setSelectedLanguage(lang.id);
+    }
+  };
+
   const renderStep2Language = () => (
     <View style={styles.stepContainer}>
       <Text type="title" style={styles.title}>
@@ -303,38 +322,49 @@ export default function OnboardingScreen() {
         contentContainerStyle={{ rowGap: 16 }}
         style={{ marginTop: 20 }}
       >
-        {LANGUAGE_OPTIONS.map((lang) => (
-          <TouchableOpacity
-            key={lang.id}
-            disabled={!lang.hasContent}
-            style={[
-              styles.optionCard,
-              styles.motivationCard,
-              { borderColor: colors.border },
-              selectedLanguage === lang.id && {
-                borderColor: colors.primary,
-              },
-              !lang.hasContent && { opacity: 0.5 },
-            ]}
-            onPress={() => setSelectedLanguage(lang.id)}
-          >
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[
-                  styles.optionTitle,
-                  selectedLanguage === lang.id && {
-                    color: colors.primary,
-                  },
-                ]}
-              >
-                {lang.title}
-              </Text>
-              <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
-                {lang.hasContent ? lang.nativeName : "Coming soon"}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+        {LANGUAGE_OPTIONS.map((lang) => {
+          const needsPremium = !canAccessCourse(lang.courseIndex, isPremium);
+          return (
+            <TouchableOpacity
+              key={lang.id}
+              style={[
+                styles.optionCard,
+                styles.motivationCard,
+                { borderColor: colors.border },
+                selectedLanguage === lang.id && {
+                  borderColor: colors.primary,
+                },
+              ]}
+              onPress={() => handleLanguageSelect(lang)}
+            >
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text
+                    style={[
+                      styles.optionTitle,
+                      selectedLanguage === lang.id && {
+                        color: colors.primary,
+                      },
+                    ]}
+                  >
+                    {lang.title}
+                  </Text>
+                  {needsPremium && (
+                    <View style={[styles.premiumLanguageBadge, { backgroundColor: colors.primary }]}>
+                      <Ionicons name="star" size={10} color={colors.textInverse} />
+                      <Text style={[styles.premiumLanguageBadgeText, { color: colors.textInverse }]}>
+                        PREMIUM
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.optionDescription, { color: colors.textSecondary }]}>
+                  {lang.nativeName}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -532,6 +562,10 @@ export default function OnboardingScreen() {
         visible={showPaywall}
         onClose={() => router.replace("/lessons")}
       />
+      <Paywall
+        visible={languagePaywallVisible}
+        onClose={() => setLanguagePaywallVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -636,5 +670,18 @@ const styles = StyleSheet.create({
   continueButtonText: {
     fontSize: 18,
     fontWeight: "bold",
+  },
+  premiumLanguageBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    gap: 4,
+  },
+  premiumLanguageBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
 });

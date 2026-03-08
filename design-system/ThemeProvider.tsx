@@ -5,9 +5,8 @@
  * Reads system color scheme and integrates with AccessibilityContext.
  */
 import React, { createContext, useContext, useMemo, type PropsWithChildren } from 'react';
-import { useColorScheme } from 'react-native';
 
-import { lightTheme, darkTheme, type ThemeColors } from './tokens/colors';
+import { lightTheme, type ThemeColors } from './tokens/colors';
 import { textStyles } from './tokens/typography';
 import { spacing, spacingAliases } from './tokens/spacing';
 import { radius } from './tokens/radius';
@@ -26,20 +25,17 @@ export interface Theme {
 const ThemeContext = createContext<Theme | null>(null);
 
 export function DesignSystemProvider({ children }: PropsWithChildren) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-
   const theme = useMemo<Theme>(
     () => ({
-      colors: isDark ? darkTheme : lightTheme,
-      isDark,
+      colors: lightTheme,
+      isDark: false,
       spacing,
       spacingAliases,
       radius,
       shadows,
       typography: textStyles,
     }),
-    [isDark],
+    [],
   );
 
   return (

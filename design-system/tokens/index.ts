@@ -1,4 +1,4 @@
-export { palette, lightTheme, darkTheme, type ThemeColors } from './colors';
+export { palette, lightTheme, type ThemeColors } from './colors';
 export { fontFamilies, textStyles, getAccessibleFontFamily, type TextVariant, type TypeStyle } from './typography';
 export { spacing, spacingAliases, type SpacingKey } from './spacing';
 export { radius, type RadiusKey } from './radius';

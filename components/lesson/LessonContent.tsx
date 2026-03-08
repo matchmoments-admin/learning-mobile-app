@@ -22,7 +22,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { router } from "expo-router";
 import * as Speech from "expo-speech";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Animated, Platform, StyleSheet, TouchableOpacity, View } from "react-native";
 import { toast } from "sonner-native";
 import { compareTwoStrings } from "string-similarity";
 import { Text } from "@/design-system/components/Text";
@@ -268,6 +268,11 @@ export default function LessonContent({
   };
 
   const startRecording = async () => {
+    if (Platform.OS === "web") {
+      toast.info("Recording is not available on web");
+      return;
+    }
+
     if (isSpeechPlaying) {
       Speech.stop();
       setIsSpeechPlaying(false);

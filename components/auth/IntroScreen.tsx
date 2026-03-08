@@ -1,9 +1,14 @@
 import { useTheme } from "@/design-system/ThemeProvider";
+import {
+  signInWithApple,
+  signInWithGoogle,
+} from "@/lib/services/social-auth-service";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Fontisto from "@expo/vector-icons/Fontisto";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   Image,
   Keyboard,
@@ -13,6 +18,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { toast } from "sonner-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Extrapolation,
@@ -46,6 +52,7 @@ export default function IntroScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState<"login" | "email">("login");
+  const [socialLoading, setSocialLoading] = useState(false);
 
   const mainTextWords: string[] = ["Learn", "anything.", "Your", "way."];
   const scriptPhrases: string[] = [
@@ -219,6 +226,34 @@ export default function IntroScreen() {
     };
   }, []);
 
+  const handleGoogleSignIn = async () => {
+    setSocialLoading(true);
+    try {
+      const session = await signInWithGoogle();
+      if (session) {
+        toast.success("Signed in with Google");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Google sign-in failed");
+    } finally {
+      setSocialLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setSocialLoading(true);
+    try {
+      const session = await signInWithApple();
+      if (session) {
+        toast.success("Signed in with Apple");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Apple sign-in failed");
+    } finally {
+      setSocialLoading(false);
+    }
+  };
+
   const renderLoginView = () => (
     <Animated.View style={[styles.viewContainer, menuContentAnimatedStyle]}>
       <View style={styles.logoSection}>
@@ -232,33 +267,57 @@ export default function IntroScreen() {
       </View>
 
       <View style={styles.buttonsContainer}>
+        {Platform.OS === "ios" && (
+          <Pressable
+            style={[
+              styles.loginButton,
+              socialLoading && styles.buttonDisabled,
+            ]}
+            onPress={handleAppleSignIn}
+            disabled={socialLoading}
+          >
+            {socialLoading ? (
+              <ActivityIndicator
+                size="small"
+                color="white"
+                style={styles.appleIcon}
+              />
+            ) : (
+              <AntDesign
+                name="apple"
+                size={16}
+                color="white"
+                style={styles.appleIcon}
+              />
+            )}
+            <Text style={styles.buttonText}>Continue with Apple</Text>
+          </Pressable>
+        )}
         <Pressable
-          style={styles.loginButton}
-          onPress={() => console.log("Apple login")}
+          style={[styles.loginButton, socialLoading && styles.buttonDisabled]}
+          onPress={handleGoogleSignIn}
+          disabled={socialLoading}
         >
-          <AntDesign
-            name="apple"
-            size={16}
-            color="white"
-            style={styles.appleIcon}
-          />
-          <Text style={styles.buttonText}>Continue with Apple</Text>
-        </Pressable>
-        <Pressable
-          style={styles.loginButton}
-          onPress={() => console.log("Google login")}
-        >
-          <AntDesign
-            name="google"
-            size={16}
-            color="white"
-            style={styles.appleIcon}
-          />
+          {socialLoading ? (
+            <ActivityIndicator
+              size="small"
+              color="white"
+              style={styles.appleIcon}
+            />
+          ) : (
+            <AntDesign
+              name="google"
+              size={16}
+              color="white"
+              style={styles.appleIcon}
+            />
+          )}
           <Text style={styles.buttonText}>Continue with Google</Text>
         </Pressable>
         <Pressable
-          style={styles.loginButton}
+          style={[styles.loginButton, socialLoading && styles.buttonDisabled]}
           onPress={() => animateToEmailView("email")}
+          disabled={socialLoading}
         >
           <Fontisto
             name="email"
@@ -416,6 +475,9 @@ const styles = StyleSheet.create({
   },
   emailIcon: {
     marginRight: 12,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: "white",

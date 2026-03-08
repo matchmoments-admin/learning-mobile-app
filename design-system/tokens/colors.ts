@@ -134,7 +134,7 @@ export const lightTheme: ThemeColors = {
   // Backgrounds
   background: palette.white,
   backgroundSecondary: palette.neutral[50],
-  card: palette.white,
+  card: palette.neutral[50],
 
   // Text
   text: palette.neutral[900],
@@ -173,45 +173,3 @@ export const lightTheme: ThemeColors = {
   shadow: palette.black,
 };
 
-export const darkTheme: ThemeColors = {
-  // Backgrounds — Brilliant.org-inspired dark
-  background: '#0F1117',
-  backgroundSecondary: '#1A1B23',
-  card: '#1E1F2A',
-
-  // Text
-  text: '#ECEDEE',
-  textSecondary: '#9BA1A6',
-  textTertiary: '#6B7280',
-  textInverse: palette.neutral[900],
-
-  // Borders
-  border: '#2A2B35',
-  borderLight: '#22232D',
-
-  // Brand
-  primary: palette.primary[400],
-  primaryLight: 'rgba(249, 115, 22, 0.15)',
-  primaryDark: palette.primary[600],
-
-  // Semantic
-  success: palette.success[400],
-  successLight: 'rgba(34, 197, 94, 0.15)',
-  error: palette.error[400],
-  errorLight: 'rgba(239, 68, 68, 0.15)',
-  warning: palette.warning[400],
-  warningLight: 'rgba(245, 158, 11, 0.15)',
-  info: palette.info[400],
-  infoLight: 'rgba(59, 130, 246, 0.15)',
-
-  // Interactive
-  icon: '#9BA1A6',
-  iconSecondary: '#6B7280',
-  tabIconDefault: '#9BA1A6',
-  tabIconSelected: palette.primary[400],
-  tint: palette.primary[400],
-
-  // Surfaces
-  overlay: 'rgba(0, 0, 0, 0.7)',
-  shadow: palette.black,
-};

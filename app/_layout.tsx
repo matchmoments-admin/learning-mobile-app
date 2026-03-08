@@ -7,6 +7,7 @@ import { DesignSystemProvider, useTheme } from "@/design-system/ThemeProvider";
 import { useDeepLinking } from "@/hooks/useDeepLinking";
 import { getDefaultPack } from "@/lib/services/content-pack-service";
 import { migrateLocalDataToSupabase } from "@/lib/services/migration-service";
+import { configureGoogleSignIn } from "@/lib/services/social-auth-service";
 import { checkAndAwardDailyLogin } from "@/lib/services/xp-service";
 import AuthProvider from "@/providers/AuthProvider";
 import {
@@ -21,7 +22,6 @@ import {
   PlusJakartaSans_700Bold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import {
-  DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
@@ -30,10 +30,14 @@ import { router, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useMemo } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { Toaster } from "sonner-native";
+
+if (Platform.OS !== "web") {
+  configureGoogleSignIn();
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -44,7 +48,7 @@ export const unstable_settings = {
 function RootLayoutNav() {
   const { session, loading, profile } = useAuth();
   const { activePack, setActivePack } = useLanguage();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const segments = useSegments();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
@@ -60,9 +64,9 @@ function RootLayoutNav() {
   // Build React Navigation theme from design system tokens
   const navTheme = useMemo(
     () => ({
-      ...(isDark ? DarkTheme : DefaultTheme),
+      ...DefaultTheme,
       colors: {
-        ...(isDark ? DarkTheme : DefaultTheme).colors,
+        ...DefaultTheme.colors,
         primary: colors.primary,
         background: colors.background,
         card: colors.card,
@@ -70,7 +74,7 @@ function RootLayoutNav() {
         border: colors.border,
       },
     }),
-    [isDark, colors],
+    [colors],
   );
 
   // Handle deep linking for magic links
@@ -122,7 +126,7 @@ function RootLayoutNav() {
           <IntroScreen />
           <Toaster />
         </GestureHandlerRootView>
-        <StatusBar style={isDark ? "light" : "dark"} />
+        <StatusBar style="dark" />
       </ThemeProvider>
     );
   }
@@ -133,10 +137,12 @@ function RootLayoutNav() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="onboarding" />
+          <Stack.Screen name="privacy" />
+          <Stack.Screen name="terms" />
         </Stack>
         <Toaster />
       </GestureHandlerRootView>
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar style="dark" />
     </ThemeProvider>
   );
 }

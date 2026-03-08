@@ -3,6 +3,7 @@ import {
   isLessonFree,
   canAccessChapter,
   canAccessLesson,
+  canAccessCourse,
 } from "@/lib/services/access-service";
 import type { ContentPack } from "@/constants/ContentTypes";
 
@@ -89,5 +90,23 @@ describe("canAccessLesson", () => {
 
   it("allows free users to access free lessons", () => {
     expect(canAccessLesson(pack, "1-1", false)).toBe(true);
+  });
+});
+
+describe("canAccessCourse", () => {
+  it("always allows access to the first course (index 0)", () => {
+    expect(canAccessCourse(0, false)).toBe(true);
+    expect(canAccessCourse(0, true)).toBe(true);
+  });
+
+  it("blocks free users from additional courses", () => {
+    expect(canAccessCourse(1, false)).toBe(false);
+    expect(canAccessCourse(2, false)).toBe(false);
+  });
+
+  it("allows premium users to access any course", () => {
+    expect(canAccessCourse(1, true)).toBe(true);
+    expect(canAccessCourse(2, true)).toBe(true);
+    expect(canAccessCourse(99, true)).toBe(true);
   });
 });

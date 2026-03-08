@@ -34,3 +34,15 @@ export function canAccessLesson(
 ): boolean {
   return isPremium || isLessonFree(pack, lessonId);
 }
+
+/**
+ * Can the user access a course at the given index?
+ * The first course (index 0) is always accessible.
+ * Additional courses require a premium subscription.
+ */
+export function canAccessCourse(
+  courseIndex: number,
+  isPremium: boolean,
+): boolean {
+  return courseIndex === 0 || isPremium;
+}

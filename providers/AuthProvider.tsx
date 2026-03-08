@@ -2,6 +2,7 @@ import { AuthContext } from "@/ctx/AuthContext";
 import { supabase } from "@/utils/supabase";
 import { Session } from "@supabase/supabase-js";
 import { PropsWithChildren, useEffect, useState } from "react";
+import { AppState } from "react-native";
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
@@ -55,7 +56,22 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       loadProfile(newSession).finally(() => setLoading(false));
     });
 
-    return () => subscription.unsubscribe();
+    // Refresh tokens when app returns to foreground
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      (state) => {
+        if (state === "active") {
+          supabase.auth.startAutoRefresh();
+        } else {
+          supabase.auth.stopAutoRefresh();
+        }
+      },
+    );
+
+    return () => {
+      subscription.unsubscribe();
+      appStateSubscription.remove();
+    };
   }, []);
 
   return (

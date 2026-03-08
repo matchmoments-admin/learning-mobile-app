@@ -2,8 +2,14 @@ import type { ContentPack } from "@/constants/ContentTypes";
 
 // Bundled content packs — loaded from assets/data/packs/
 import zhCNBeginner from "@/assets/data/packs/zh-CN-beginner.json";
+import esBeginner from "@/assets/data/packs/es-beginner.json";
+import hiBeginner from "@/assets/data/packs/hi-beginner.json";
 
-const BUNDLED_PACKS: ContentPack[] = [zhCNBeginner as unknown as ContentPack];
+const BUNDLED_PACKS: ContentPack[] = [
+  zhCNBeginner as unknown as ContentPack,
+  esBeginner as unknown as ContentPack,
+  hiBeginner as unknown as ContentPack,
+];
 
 let cachedPack: ContentPack | null = null;
 

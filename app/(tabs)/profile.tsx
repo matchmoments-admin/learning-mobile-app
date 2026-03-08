@@ -7,8 +7,9 @@ import { useStreakState } from "@/hooks/useStreakState";
 import { useXpState } from "@/hooks/useXpState";
 import { supabase } from "@/utils/supabase";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Alert, Linking, StyleSheet, TouchableOpacity, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
@@ -39,6 +40,34 @@ export default function ProfileContent() {
         toast.error("Failed to sign out. Please restart the app.");
       }
     }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "This will permanently delete your account and all associated data. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase.functions.invoke(
+                "delete-account",
+              );
+              if (error) throw error;
+              await supabase.auth.signOut({ scope: "local" });
+              toast.success("Account deleted successfully");
+            } catch {
+              toast.error(
+                "Failed to delete account. Please contact support.",
+              );
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -197,8 +226,8 @@ export default function ProfileContent() {
                 style={[styles.menuItem, { borderColor: colors.border }]}
                 onPress={() =>
                   Alert.alert(
-                    "Settings",
-                    "Language, notifications, and app preferences",
+                    "Coming Soon",
+                    "Settings are coming soon. For help, email brendan.milton1211@gmail.com",
                   )
                 }
               >
@@ -221,10 +250,7 @@ export default function ProfileContent() {
               <TouchableOpacity
                 style={styles.menuItemLast}
                 onPress={() =>
-                  Alert.alert(
-                    "Help",
-                    "Get help, contact support, and view FAQs",
-                  )
+                  Linking.openURL("mailto:brendan.milton1211@gmail.com?subject=Lumora Support")
                 }
               >
                 <View style={styles.menuItemLeft}>
@@ -254,6 +280,32 @@ export default function ProfileContent() {
             <Ionicons name="log-out-outline" size={20} color={colors.error} />
             <Text style={[styles.signOutText, { color: colors.error }]}>Sign Out</Text>
           </TouchableOpacity>
+
+          {/* Delete Account Button */}
+          <TouchableOpacity
+            onPress={handleDeleteAccount}
+            style={styles.deleteAccountButton}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
+            <Text style={[styles.deleteAccountText, { color: colors.textTertiary }]}>
+              Delete Account
+            </Text>
+          </TouchableOpacity>
+
+          {/* Legal links */}
+          <View style={styles.legalLinks}>
+            <TouchableOpacity onPress={() => router.push("/privacy")}>
+              <Text style={[styles.legalLinkText, { color: colors.textTertiary }]}>
+                Privacy Policy
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.legalSeparator, { color: colors.textTertiary }]}>•</Text>
+            <TouchableOpacity onPress={() => router.push("/terms")}>
+              <Text style={[styles.legalLinkText, { color: colors.textTertiary }]}>
+                Terms of Service
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </View>
 
@@ -437,5 +489,32 @@ const styles = StyleSheet.create({
   signOutText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  deleteAccountButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    gap: 6,
+    marginTop: 16,
+  },
+  deleteAccountText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  legalLinks: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    textDecorationLine: "underline",
+  },
+  legalSeparator: {
+    fontSize: 12,
   },
 });

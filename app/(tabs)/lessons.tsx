@@ -233,7 +233,7 @@ export default function LessonsContent() {
               <Ionicons name="star" size={20} color={colors.textInverse} />
               <View style={styles.premiumBannerText}>
                 <Text style={[styles.premiumBannerTitle, { color: colors.textInverse }]}>
-                  Unlock all 12 chapters
+                  Unlock all languages & the full curriculum
                 </Text>
                 <Text style={[styles.premiumBannerSubtitle, { color: colors.textInverse }]}>
                   Start your free 7-day trial

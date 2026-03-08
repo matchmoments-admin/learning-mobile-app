@@ -2,6 +2,7 @@ import { supabase } from "@/utils/supabase";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 import * as Linking from "expo-linking";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import { toast } from "sonner-native";
 
 const createSessionFromUrl = async (url: string) => {
@@ -32,20 +33,21 @@ const createSessionFromUrl = async (url: string) => {
 };
 
 export const useDeepLinking = () => {
+  // On web, detectSessionInUrl handles token extraction automatically
   const url = Linking.useLinkingURL();
 
   useEffect(() => {
-    if (url) {
-      createSessionFromUrl(url)
-        .then((session) => {
-          if (session) {
-            console.log("Session created from deep link");
-          }
-        })
-        .catch((error) => {
-          console.error("Error creating session from URL:", error);
-          toast.error("Failed to sign in. Please try again.");
-        });
-    }
+    if (Platform.OS === "web" || !url) return;
+
+    createSessionFromUrl(url)
+      .then((session) => {
+        if (session) {
+          console.log("Session created from deep link");
+        }
+      })
+      .catch((error) => {
+        console.error("Error creating session from URL:", error);
+        toast.error("Failed to sign in. Please try again.");
+      });
   }, [url]);
 };

@@ -2,11 +2,12 @@ import { supabase } from "@/utils/supabase";
 import Entypo from "@expo/vector-icons/Entypo";
 import { makeRedirectUri } from "expo-auth-session";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { toast } from "sonner-native";
 
-const redirectTo = makeRedirectUri();
+const redirectTo =
+  Platform.OS === "web" ? window.location.origin : makeRedirectUri();
 
 export default function EmailAuth({
   onBack,

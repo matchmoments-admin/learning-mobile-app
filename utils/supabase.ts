@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import * as aesjs from "aes-js";
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 class LargeSecureStore {
   private async _encrypt(key: string, value: string) {
@@ -32,6 +33,9 @@ class LargeSecureStore {
     return aesjs.utils.utf8.fromBytes(decryptedBytes);
   }
   async getItem(key: string) {
+    if (Platform.OS === "web") {
+      return await AsyncStorage.getItem(key);
+    }
     const encrypted = await AsyncStorage.getItem(key);
     if (!encrypted) {
       return encrypted;
@@ -40,9 +44,15 @@ class LargeSecureStore {
   }
   async removeItem(key: string) {
     await AsyncStorage.removeItem(key);
-    await SecureStore.deleteItemAsync(key);
+    if (Platform.OS !== "web") {
+      await SecureStore.deleteItemAsync(key);
+    }
   }
   async setItem(key: string, value: string) {
+    if (Platform.OS === "web") {
+      await AsyncStorage.setItem(key, value);
+      return;
+    }
     const encrypted = await this._encrypt(key, value);
     await AsyncStorage.setItem(key, encrypted);
   }
@@ -56,7 +66,7 @@ export const supabase = createClient(
       storage: new LargeSecureStore(),
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: Platform.OS === "web",
     },
   }
 );
